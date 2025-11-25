@@ -1,16 +1,16 @@
 // src/middleware/validation.middleware.ts
 import { Request, Response, NextFunction } from 'express'
-import { z, ZodError, ZodTypeAny, ZodIssue } from 'zod'
+import { z, ZodError } from 'zod'
 import { ValidationError } from '../utils/error.util'
 
-export const validate = (schema: ZodTypeAny) => {
+export const validate = (schema: z.ZodSchema) => {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
       await schema.parseAsync(req.body)
       return next()
     } catch (error: unknown) {
       if (error instanceof ZodError) {
-        const errors = (error.issues as ZodIssue[]).map((issue) => ({
+        const errors = error.issues.map((issue) => ({
           path: issue.path.join('.'),
           message: issue.message,
         }))
@@ -22,7 +22,7 @@ export const validate = (schema: ZodTypeAny) => {
   }
 }
 
-export const validateQuery = (schema: ZodTypeAny) => {
+export const validateQuery = (schema: z.ZodSchema) => {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
       const validated = await schema.parseAsync(req.query)
@@ -30,7 +30,7 @@ export const validateQuery = (schema: ZodTypeAny) => {
       return next()
     } catch (error: unknown) {
       if (error instanceof ZodError) {
-        const errors = (error.issues as ZodIssue[]).map((issue) => ({
+        const errors = error.issues.map((issue) => ({
           path: issue.path.join('.'),
           message: issue.message,
         }))

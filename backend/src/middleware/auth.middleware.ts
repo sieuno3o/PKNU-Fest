@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express'
 import { JwtUtil } from '../utils/jwt.util'
 import { UnauthorizedError } from '../utils/error.util'
 
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = (req: Request, _res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization
 
@@ -27,7 +27,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   }
 }
 
-export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+export const optionalAuth = (req: Request, _res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization
 

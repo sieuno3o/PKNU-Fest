@@ -27,7 +27,7 @@ export class FoodTrucksController {
     }
   }
 
-  async getFoodTrucks(req: Request, res: Response, next: NextFunction) {
+  async getFoodTrucks(_req: Request, res: Response, next: NextFunction) {
     try {
       const foodTrucks = await foodTrucksService.getFoodTrucks()
       return ResponseUtil.success(res, foodTrucks)
@@ -71,7 +71,7 @@ export class FoodTrucksController {
     }
   }
 
-  async getFoodTruckLocations(req: Request, res: Response, next: NextFunction) {
+  async getFoodTruckLocations(_req: Request, res: Response, next: NextFunction) {
     try {
       const locations = await foodTrucksService.getFoodTruckLocations()
       return ResponseUtil.success(res, locations)
@@ -97,9 +97,9 @@ export class FoodTrucksController {
     }
   }
 
-  async getMenu(req: Request, res: Response, next: NextFunction) {
+  async getMenu(_req: Request, res: Response, next: NextFunction) {
     try {
-      const menu = await foodTrucksService.getMenu(req.params.id)
+      const menu = await foodTrucksService.getMenu(_req.params.id)
       return ResponseUtil.success(res, menu)
     } catch (error) {
       next(error)

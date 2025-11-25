@@ -60,7 +60,7 @@ export class AuthController {
     }
   }
 
-  async logout(req: Request, res: Response, next: NextFunction) {
+  async logout(_req: Request, res: Response, next: NextFunction) {
     try {
       return ResponseUtil.success(res, null, 'Logout successful')
     } catch (error) {

@@ -8,7 +8,11 @@
       "Bash(npm install:*)",
       "Bash(npx tailwindcss:*)",
       "Bash(npm init:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(cat:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run build:*)",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []
