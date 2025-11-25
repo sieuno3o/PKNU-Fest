@@ -1,0 +1,185 @@
+// Prisma Schema for PKNU-Fest
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - 사용자 (학생, 운영진, 푸드트럭 운영자)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  reservations Reservation[]
+  foodTruck    FoodTruck?
+  orders       Order[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  STUDENT  // 학생
+  ADMIN    // 운영진
+  VENDOR   // 푸드트럭 운영자
+}
+
+// Event model - 행사/프로그램
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  category    String   // 게임, 먹거리, 체험 등
+  location    String
+  latitude    Float
+  longitude   Float
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  reservations Reservation[]
+  timeSlots    TimeSlot[]
+
+  @@map("events")
+}
+
+// TimeSlot model - 시간대별 예약
+model TimeSlot {
+  id        String   @id @default(uuid())
+  eventId   String
+  startTime DateTime
+  endTime   DateTime
+  capacity  Int
+  reserved  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@map("time_slots")
+}
+
+// Reservation model - 예약
+model Reservation {
+  id         String            @id @default(uuid())
+  userId     String
+  eventId    String
+  timeSlotId String?
+  status     ReservationStatus @default(PENDING)
+  qrCode     String?           @unique
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event    Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  timeSlot TimeSlot? @relation(fields: [timeSlotId], references: [id], onDelete: SetNull)
+
+  @@map("reservations")
+}
+
+enum ReservationStatus {
+  PENDING    // 대기
+  CONFIRMED  // 확정
+  CHECKED_IN // 체크인 완료
+  CANCELLED  // 취소
+}
+
+// FoodTruck model - 푸드트럭
+model FoodTruck {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  location    String
+  latitude    Float
+  longitude   Float
+  ownerId     String   @unique
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  menu  MenuItem[]
+  orders Order[]
+
+  @@map("food_trucks")
+}
+
+// MenuItem model - 메뉴
+model MenuItem {
+  id          String   @id @default(uuid())
+  foodTruckId String
+  name        String
+  description String?
+  price       Int
+  imageUrl    String?
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  foodTruck  FoodTruck   @relation(fields: [foodTruckId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("menu_items")
+}
+
+// Order model - 주문
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  foodTruckId String
+  status      OrderStatus @default(PENDING)
+  totalPrice  Int
+  pickupNumber String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodTruck  FoodTruck   @relation(fields: [foodTruckId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING    // 주문 접수
+  PREPARING  // 조리 중
+  READY      // 준비 완료
+  COMPLETED  // 수령 완료
+  CANCELLED  // 취소
+}
+
+// OrderItem model - 주문 아이템
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  menuItemId String
+  quantity   Int
+  price      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
