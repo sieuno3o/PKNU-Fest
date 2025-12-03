@@ -6,9 +6,18 @@ export class EventsService {
   async createEvent(data: CreateEventInput) {
     const event = await prisma.event.create({
       data: {
-        ...data,
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime),
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        location: data.location,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        thumbnail: data.thumbnail,
+        images: data.images || [],
+        isStudentOnly: data.isStudentOnly || false,
+        capacity: data.capacity,
+        status: data.status || 'DRAFT',
+        organizer: data.organizer,
       },
     })
 
@@ -20,6 +29,7 @@ export class EventsService {
     search?: string
     startDate?: string
     endDate?: string
+    studentOnly?: boolean
     page?: number
     limit?: number
     sort?: 'latest' | 'popular' | 'upcoming'
@@ -49,6 +59,10 @@ export class EventsService {
       if (filters.endDate) {
         where.startTime.lte = new Date(filters.endDate)
       }
+    }
+
+    if (filters.studentOnly !== undefined) {
+      where.isStudentOnly = filters.studentOnly
     }
 
     let orderBy: any = { createdAt: 'desc' }
@@ -113,13 +127,11 @@ export class EventsService {
       throw new NotFoundError('Event not found')
     }
 
-    const updateData: any = { ...data }
-    if (data.startTime) updateData.startTime = new Date(data.startTime)
-    if (data.endTime) updateData.endTime = new Date(data.endTime)
-
     const updatedEvent = await prisma.event.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...data,
+      },
     })
 
     return updatedEvent
@@ -146,15 +158,14 @@ export class EventsService {
         latitude: true,
         longitude: true,
         category: true,
-        startTime: true,
-        endTime: true,
+        isStudentOnly: true,
       },
     })
 
     return events
   }
 
-  async createTimeSlot(eventId: string, data: { startTime: string; endTime: string; capacity: number }) {
+  async createTimeSlot(eventId: string, data: { startTime: string; endTime: string; capacity?: number | null }) {
     const event = await prisma.event.findUnique({ where: { id: eventId } })
 
     if (!event) {

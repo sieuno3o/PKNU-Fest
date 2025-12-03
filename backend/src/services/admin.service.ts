@@ -9,8 +9,8 @@ export class AdminService {
       prisma.order.count(),
     ])
 
-    const pendingReservations = await prisma.reservation.count({
-      where: { status: 'PENDING' },
+    const confirmedReservations = await prisma.reservation.count({
+      where: { status: 'CONFIRMED' },
     })
 
     const activeOrders = await prisma.order.count({
@@ -22,7 +22,7 @@ export class AdminService {
       totalEvents,
       totalReservations,
       totalOrders,
-      pendingReservations,
+      confirmedReservations,
       activeOrders,
     }
   }

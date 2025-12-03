@@ -5,6 +5,18 @@ export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
+  phone: z.string().min(10, 'Phone number must be at least 10 characters'),
+})
+
+export const sendStudentVerificationSchema = z.object({
+  studentEmail: z.string().email('Invalid email address').refine(
+    (email) => email.endsWith('@pknu.ac.kr'),
+    { message: 'Must be a PKNU email address (@pknu.ac.kr)' }
+  ),
+})
+
+export const confirmStudentVerificationSchema = z.object({
+  code: z.string().length(6, 'Verification code must be 6 characters'),
 })
 
 export const loginSchema = z.object({
@@ -25,10 +37,12 @@ export const createEventSchema = z.object({
   location: z.string().min(1, 'Location is required'),
   latitude: z.number(),
   longitude: z.number(),
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
-  capacity: z.number().int().positive(),
-  imageUrl: z.string().url().optional(),
+  thumbnail: z.string().optional(),
+  images: z.array(z.string()).max(5, 'Maximum 5 images allowed').optional(),
+  isStudentOnly: z.boolean().optional().default(false),
+  capacity: z.number().int().positive().nullable().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'FULL', 'ONGOING', 'ENDED']).optional(),
+  organizer: z.string().optional(),
 })
 
 export const updateEventSchema = createEventSchema.partial()
@@ -38,6 +52,7 @@ export const eventQuerySchema = z.object({
   search: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  studentOnly: z.string().transform((val) => val === 'true').optional(),
   page: z.string().transform(Number).pipe(z.number().int().positive()).optional(),
   limit: z.string().transform(Number).pipe(z.number().int().positive()).optional(),
   sort: z.enum(['latest', 'popular', 'upcoming']).optional(),
@@ -47,6 +62,7 @@ export const eventQuerySchema = z.object({
 export const createReservationSchema = z.object({
   eventId: z.string().uuid(),
   timeSlotId: z.string().uuid().optional(),
+  partySize: z.number().int().min(1).max(4).optional(),
 })
 
 // FoodTruck Schemas
@@ -91,7 +107,7 @@ export const updateOrderStatusSchema = z.object({
 export const createTimeSlotSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
-  capacity: z.number().int().positive(),
+  capacity: z.number().int().positive().nullable().optional(),
 })
 
 export type RegisterInput = z.infer<typeof registerSchema>

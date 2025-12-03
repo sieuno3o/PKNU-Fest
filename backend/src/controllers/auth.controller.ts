@@ -67,4 +67,32 @@ export class AuthController {
       next(error)
     }
   }
+
+  async sendStudentVerification(req: ReqWithUser, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' })
+      }
+
+      const { studentEmail } = req.body
+      const result = await authService.sendStudentVerification(req.user.userId, studentEmail)
+      return ResponseUtil.success(res, result, 'Verification code sent')
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async confirmStudentVerification(req: ReqWithUser, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' })
+      }
+
+      const { code } = req.body
+      const result = await authService.confirmStudentVerification(req.user.userId, code)
+      return ResponseUtil.success(res, result, 'Student verification confirmed')
+    } catch (error) {
+      next(error)
+    }
+  }
 }

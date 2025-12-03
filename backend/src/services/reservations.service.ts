@@ -1,5 +1,6 @@
 import prisma from '../utils/prisma'
 import QRCode from 'qrcode'
+import { randomUUID } from 'crypto'
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/error.util'
 import { CreateReservationInput } from '../utils/validation.schemas'
 
@@ -12,12 +13,25 @@ export class ReservationsService {
       throw new NotFoundError('Event not found')
     }
 
-    // Check event capacity if no time slot
-    if (!data.timeSlotId) {
+    // Check if event is student-only
+    if (event.isStudentOnly) {
+      const user = await prisma.user.findUnique({ where: { id: userId } })
+
+      if (!user) {
+        throw new NotFoundError('User not found')
+      }
+
+      if (!user.isStudentVerified) {
+        throw new ForbiddenError('This event is for verified students only. Please verify your student status.')
+      }
+    }
+
+    // Check event capacity if no time slot and capacity is set
+    if (!data.timeSlotId && event.capacity !== null) {
       const reservationCount = await prisma.reservation.count({
         where: {
           eventId: data.eventId,
-          status: { in: ['PENDING', 'CONFIRMED', 'CHECKED_IN'] },
+          status: { in: ['CONFIRMED', 'CHECKED_IN'] },
         },
       })
 
@@ -41,7 +55,8 @@ export class ReservationsService {
         throw new NotFoundError('Time slot not found')
       }
 
-      if (timeSlot._count.reservations >= timeSlot.capacity) {
+      // Only check capacity if it's set
+      if (timeSlot.capacity !== null && timeSlot._count.reservations >= timeSlot.capacity) {
         throw new BadRequestError('Time slot is fully booked')
       }
     }
@@ -51,7 +66,7 @@ export class ReservationsService {
       where: {
         userId,
         eventId: data.eventId,
-        status: { in: ['PENDING', 'CONFIRMED', 'CHECKED_IN'] },
+        status: { in: ['CONFIRMED', 'CHECKED_IN'] },
       },
     })
 
@@ -59,40 +74,37 @@ export class ReservationsService {
       throw new BadRequestError('You already have a reservation for this event')
     }
 
-    // Create reservation
-    const reservation = await prisma.reservation.create({
-      data: {
-        userId,
-        eventId: data.eventId,
-        timeSlotId: data.timeSlotId,
-        status: 'CONFIRMED',
-      },
-      include: {
-        event: true,
-        timeSlot: true,
-      },
-    })
+    // Generate UUID for reservation
+    const reservationId = randomUUID()
 
-    // Generate QR code
+    // Generate QR code data
     const qrData = JSON.stringify({
-      reservationId: reservation.id,
+      reservationId,
       userId,
       eventId: data.eventId,
     })
 
+    // Generate QR code
     const qrCodeDataURL = await QRCode.toDataURL(qrData)
 
-    // Update reservation with QR code
-    const updatedReservation = await prisma.reservation.update({
-      where: { id: reservation.id },
-      data: { qrCode: qrCodeDataURL },
+    // Create reservation with QR code
+    const reservation = await prisma.reservation.create({
+      data: {
+        id: reservationId,
+        userId,
+        eventId: data.eventId,
+        timeSlotId: data.timeSlotId,
+        partySize: data.partySize,
+        status: 'CONFIRMED',
+        qrCode: qrCodeDataURL,
+      },
       include: {
         event: true,
         timeSlot: true,
       },
     })
 
-    return updatedReservation
+    return reservation
   }
 
   async getReservations(userId: string, filters?: { status?: string }) {
@@ -188,7 +200,10 @@ export class ReservationsService {
 
     const updatedReservation = await prisma.reservation.update({
       where: { id: reservationId },
-      data: { status: 'CHECKED_IN' },
+      data: {
+        status: 'CHECKED_IN',
+        checkedInAt: new Date(),
+      },
       include: {
         event: true,
         user: {

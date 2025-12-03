@@ -24,13 +24,16 @@ export class AuthService {
         email: data.email,
         password: hashedPassword,
         name: data.name,
-        role: 'STUDENT', // Default role
+        phone: data.phone,
+        role: 'USER', // Default role
       },
       select: {
         id: true,
         email: true,
         name: true,
+        phone: true,
         role: true,
+        isStudentVerified: true,
         createdAt: true,
       },
     })
@@ -74,7 +77,9 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        phone: user.phone,
         role: user.role,
+        isStudentVerified: user.isStudentVerified,
         createdAt: user.createdAt,
       },
       token,
@@ -88,7 +93,10 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        phone: true,
         role: true,
+        isStudentVerified: true,
+        studentEmail: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -101,7 +109,7 @@ export class AuthService {
     return user
   }
 
-  async updateProfile(userId: string, data: { name?: string; email?: string }) {
+  async updateProfile(userId: string, data: { name?: string; email?: string; phone?: string }) {
     // Check if email is being changed and if it's already taken
     if (data.email) {
       const existingUser = await prisma.user.findUnique({
@@ -120,12 +128,88 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        phone: true,
         role: true,
+        isStudentVerified: true,
+        studentEmail: true,
         createdAt: true,
         updatedAt: true,
       },
     })
 
     return updatedUser
+  }
+
+  // Student Verification Methods
+  private verificationCodes: Map<string, { code: string; studentEmail: string; expiresAt: Date }> = new Map()
+
+  async sendStudentVerification(userId: string, studentEmail: string) {
+    // Check if student email is already verified by another user
+    const existingUser = await prisma.user.findUnique({
+      where: { studentEmail },
+    })
+
+    if (existingUser && existingUser.id !== userId) {
+      throw new ConflictError('This student email is already verified by another user')
+    }
+
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+    // Store verification code
+    this.verificationCodes.set(userId, { code, studentEmail, expiresAt })
+
+    // TODO: Send email with verification code
+    // For now, we'll just log it (in production, integrate with email service)
+    console.log(`Verification code for ${studentEmail}: ${code}`)
+
+    return {
+      message: 'Verification code sent to your student email',
+      expiresAt,
+    }
+  }
+
+  async confirmStudentVerification(userId: string, code: string) {
+    const verification = this.verificationCodes.get(userId)
+
+    if (!verification) {
+      throw new BadRequestError('No verification code found. Please request a new code.')
+    }
+
+    if (verification.expiresAt < new Date()) {
+      this.verificationCodes.delete(userId)
+      throw new BadRequestError('Verification code has expired. Please request a new code.')
+    }
+
+    if (verification.code !== code) {
+      throw new BadRequestError('Invalid verification code')
+    }
+
+    // Update user's student verification status
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isStudentVerified: true,
+        studentEmail: verification.studentEmail,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        role: true,
+        isStudentVerified: true,
+        studentEmail: true,
+      },
+    })
+
+    // Remove verification code
+    this.verificationCodes.delete(userId)
+
+    return {
+      message: 'Student verification successful',
+      user,
+    }
   }
 }

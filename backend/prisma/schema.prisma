@@ -11,13 +11,17 @@ datasource db {
 
 // User model - 사용자 (학생, 운영진, 푸드트럭 운영자)
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      UserRole @default(STUDENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(uuid())
+  email             String   @unique
+  password          String
+  name              String
+  phone             String
+  role              UserRole @default(USER)
+  isStudentVerified Boolean  @default(false) // 학생 인증 여부
+  studentEmail      String?  @unique // 인증한 학교 이메일
+  verified          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
   reservations Reservation[]
@@ -28,26 +32,28 @@ model User {
 }
 
 enum UserRole {
-  STUDENT  // 학생
-  ADMIN    // 운영진
-  VENDOR   // 푸드트럭 운영자
+  USER   // 일반 사용자
+  ADMIN  // 운영진
+  VENDOR // 푸드트럭 운영자
 }
 
 // Event model - 행사/프로그램
 model Event {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  category    String   // 게임, 먹거리, 체험 등
-  location    String
-  latitude    Float
-  longitude   Float
-  startTime   DateTime
-  endTime     DateTime
-  capacity    Int
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String      @id @default(uuid())
+  title         String
+  description   String?
+  category      String // 게임, 먹거리, 체험 등
+  location      String
+  latitude      Float
+  longitude     Float
+  thumbnail     String?
+  images        String[] // 상세 이미지 (최대 5장)
+  isStudentOnly Boolean     @default(false) // 학생 전용 여부
+  capacity      Int? // 인원 제한 (null이면 제한 없음)
+  status        EventStatus @default(DRAFT)
+  organizer     String? // 주최 단체
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   // Relations
   reservations Reservation[]
@@ -56,13 +62,21 @@ model Event {
   @@map("events")
 }
 
+enum EventStatus {
+  DRAFT     // 대기 (등록 완료, 아직 공개 안됨)
+  PUBLISHED // 공개 (참여자에게 노출)
+  FULL      // 예약 마감 (정원 도달)
+  ONGOING   // 진행 중
+  ENDED     // 종료
+}
+
 // TimeSlot model - 시간대별 예약
 model TimeSlot {
   id        String   @id @default(uuid())
   eventId   String
   startTime DateTime
   endTime   DateTime
-  capacity  Int
+  capacity  Int? // 인원 제한 (null이면 제한 없음)
   reserved  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -76,14 +90,16 @@ model TimeSlot {
 
 // Reservation model - 예약
 model Reservation {
-  id         String            @id @default(uuid())
-  userId     String
-  eventId    String
-  timeSlotId String?
-  status     ReservationStatus @default(PENDING)
-  qrCode     String?           @unique
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id          String            @id @default(uuid())
+  userId      String
+  eventId     String
+  timeSlotId  String?
+  partySize   Int? // 참여 인원 (인원 제한 있을 경우)
+  status      ReservationStatus @default(CONFIRMED)
+  qrCode      String            @unique
+  checkedInAt DateTime? // 체크인 시간
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   // Relations
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -94,9 +110,9 @@ model Reservation {
 }
 
 enum ReservationStatus {
-  PENDING    // 대기
   CONFIRMED  // 확정
   CHECKED_IN // 체크인 완료
+  NO_SHOW    // 노쇼
   CANCELLED  // 취소
 }
 
