@@ -13,7 +13,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(npm run build:*)",
       "Bash(xargs cat:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

@@ -8,7 +8,7 @@ interface MobileLayoutProps {
 
 export default function MobileLayout({ children }: MobileLayoutProps) {
   return (
-    <div className="h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* 헤더 - 상단 고정 */}
       <div className="flex-shrink-0">
         <Header />
