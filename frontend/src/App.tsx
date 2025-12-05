@@ -3,6 +3,7 @@ import MobileLayout from './components/Layout/MobileLayout'
 import Home from './pages/Home'
 import Map from './pages/Map'
 import Events from './pages/Events'
+import EventDetail from './pages/EventDetail'
 import FoodTrucks from './pages/FoodTrucks'
 import MyReservations from './pages/MyReservations'
 import AdminDashboard from './pages/Admin/Dashboard'
@@ -29,6 +30,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/map" element={<Map />} />
                 <Route path="/events" element={<Events />} />
+                <Route path="/events/:id" element={<EventDetail />} />
                 <Route path="/foodtrucks" element={<FoodTrucks />} />
                 <Route path="/my-reservations" element={<MyReservations />} />
                 <Route path="/admin" element={<AdminDashboard />} />
