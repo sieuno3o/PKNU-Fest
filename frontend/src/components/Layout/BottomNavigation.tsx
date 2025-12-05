@@ -1,16 +1,54 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Calendar, MapPin, UtensilsCrossed, User } from 'lucide-react'
+import {
+  Home,
+  Calendar,
+  MapPin,
+  UtensilsCrossed,
+  User,
+  LayoutDashboard,
+  Settings,
+  ClipboardList,
+  BarChart3,
+  ShoppingBag,
+} from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function BottomNavigation() {
   const location = useLocation()
+  const { user } = useAuth()
 
-  const navItems = [
+  // 역할별 네비게이션 메뉴
+  const userNavItems = [
     { path: '/', label: '홈', icon: Home },
     { path: '/events', label: '행사', icon: Calendar },
     { path: '/map', label: '지도', icon: MapPin },
     { path: '/foodtrucks', label: '음식', icon: UtensilsCrossed },
     { path: '/my-reservations', label: 'MY', icon: User },
   ]
+
+  const adminNavItems = [
+    { path: '/', label: '대시보드', icon: LayoutDashboard },
+    { path: '/admin/events', label: '행사관리', icon: Calendar },
+    { path: '/admin/reservations', label: '예약관리', icon: ClipboardList },
+    { path: '/admin/stats', label: '통계', icon: BarChart3 },
+    { path: '/profile', label: 'MY', icon: User },
+  ]
+
+  const vendorNavItems = [
+    { path: '/', label: '홈', icon: Home },
+    { path: '/vendor/menu', label: '메뉴관리', icon: Settings },
+    { path: '/vendor/orders', label: '주문관리', icon: ShoppingBag },
+    { path: '/vendor/stats', label: '통계', icon: BarChart3 },
+    { path: '/profile', label: 'MY', icon: User },
+  ]
+
+  // 역할에 따라 다른 메뉴 표시
+  let navItems = userNavItems
+  if (user?.role === 'admin') {
+    navItems = adminNavItems
+  } else if (user?.role === 'vendor') {
+    navItems = vendorNavItems
+  }
 
   return (
     <nav className="bg-white border-t border-gray-200">

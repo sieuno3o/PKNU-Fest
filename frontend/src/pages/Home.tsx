@@ -1,9 +1,18 @@
 import { Link } from 'react-router-dom'
 import { MapPin, Calendar, UtensilsCrossed, ChevronRight, LogIn, Clock, MapPinned } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
+import AdminHome from './Admin/AdminHome'
 
 export default function Home() {
+  const { user, isAdmin } = useAuth()
+
+  // 관리자는 관리자 대시보드 표시
+  if (isAdmin) {
+    return <AdminHome />
+  }
+
   // TODO: 실제로는 API에서 가져올 데이터
-  const isLoggedIn = false // 로그인 상태 (나중에 상태 관리로 변경)
+  const isLoggedIn = !!user // 로그인 상태
 
   const ongoingEvents = [
     {

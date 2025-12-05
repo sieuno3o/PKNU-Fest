@@ -14,7 +14,8 @@
       "Bash(npm run build:*)",
       "Bash(xargs cat:*)",
       "Bash(npx prisma generate:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(iconv:*)"
     ],
     "deny": [],
     "ask": []
