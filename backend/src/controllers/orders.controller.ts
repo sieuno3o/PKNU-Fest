@@ -95,4 +95,30 @@ export class OrdersController {
       next(error)
     }
   }
+
+  async processPayment(req: ReqWithUser, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' })
+      }
+
+      const order = await ordersService.processPayment(req.params.id, req.user.userId, req.body)
+      return ResponseUtil.success(res, order, 'Payment processed successfully')
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async cancelPayment(req: ReqWithUser, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' })
+      }
+
+      const order = await ordersService.cancelPayment(req.params.id, req.user.userId)
+      return ResponseUtil.success(res, order, 'Payment cancelled successfully')
+    } catch (error) {
+      next(error)
+    }
+  }
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { useLogin } from '@/hooks/useAuth'
+import { toast } from '@/components/ui/Toast'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -10,10 +12,20 @@ export default function Login() {
     password: '',
   })
 
+  const loginMutation = useLogin()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: API 연동
     console.log('Login:', formData)
+
+    try {
+      await loginMutation.mutateAsync(formData)
+      toast.success('로그인 성공!')
+      navigate('/')
+    } catch (error: any) {
+      console.error('Login error:', error)
+      toast.error(error.response?.data?.message || '로그인에 실패했습니다')
+    }
   }
 
   return (
@@ -99,9 +111,10 @@ export default function Login() {
             {/* 로그인 버튼 */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              disabled={loginMutation.isPending}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              로그인
+              {loginMutation.isPending ? '로그인 중...' : '로그인'}
             </button>
           </form>
 

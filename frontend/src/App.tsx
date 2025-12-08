@@ -1,5 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from './lib/queryClient'
 import MobileLayout from './components/Layout/MobileLayout'
+import ErrorBoundary from './components/ErrorBoundary'
+import { ToastContainer } from './components/ui/Toast'
+import { useSocket } from './hooks/useSocket'
 import Home from './pages/Home'
 import Map from './pages/Map'
 import Events from './pages/Events'
@@ -22,11 +27,18 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import StudentVerification from './pages/StudentVerification'
 import Profile from './pages/Profile'
+import Checkout from './pages/Checkout'
+import PaymentSuccess from './pages/PaymentSuccess'
 
 function App() {
+  // Socket.IO 연결 초기화
+  useSocket()
+
   return (
-    <Router>
-      <Routes>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Router>
+        <Routes>
         {/* 인증 페이지 (레이아웃 없음) */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -45,6 +57,8 @@ function App() {
                 <Route path="/foodtrucks" element={<FoodTrucks />} />
                 <Route path="/foodtrucks/:id" element={<FoodTruckDetail />} />
                 <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/my-reservations" element={<MyReservations />} />
                 <Route path="/profile" element={<Profile />} />
@@ -65,8 +79,11 @@ function App() {
             </MobileLayout>
           }
         />
-      </Routes>
-    </Router>
+        </Routes>
+        <ToastContainer />
+      </Router>
+      </ErrorBoundary>
+    </QueryClientProvider>
   )
 }
 

@@ -11,8 +11,21 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware'
 // Routes
 import routes from './routes'
 
+// Socket.IO
+import { setupSocketIO } from './socket'
+
+// Firebase & Email
+import { initializeFirebase } from './utils/firebase.util'
+import { verifyEmailConnection } from './utils/email.util'
+
 // Load environment variables
 dotenv.config()
+
+// Initialize Firebase
+initializeFirebase()
+
+// Verify email connection
+verifyEmailConnection()
 
 const app: Application = express()
 const httpServer = createServer(app)
@@ -22,6 +35,9 @@ const io = new SocketIOServer(httpServer, {
     credentials: true,
   },
 })
+
+// Setup Socket.IO handlers
+setupSocketIO(io)
 
 const PORT = process.env.PORT || 3000
 
@@ -54,15 +70,6 @@ app.get('/', (req, res) => {
 // Error handlers (must be last)
 app.use(notFoundHandler)
 app.use(errorHandler)
-
-// Socket.IO connection
-io.on('connection', (socket) => {
-  console.log('✅ Client connected:', socket.id)
-
-  socket.on('disconnect', () => {
-    console.log('❌ Client disconnected:', socket.id)
-  })
-})
 
 // Start server
 httpServer.listen(PORT, () => {

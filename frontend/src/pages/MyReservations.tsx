@@ -1,8 +1,24 @@
 import { useState } from 'react'
 import { Calendar, MapPin, Clock, Users, QrCode, X, Trash2 } from 'lucide-react'
 
+// 타입 정의
+type ReservationStatus = 'confirmed' | 'cancelled' | 'completed'
+
+interface Reservation {
+  id: string
+  eventId: string
+  eventName: string
+  eventImage: string
+  date: string
+  time: string
+  location: string
+  partySize: number
+  status: ReservationStatus
+  qrCode: string
+}
+
 // TODO: 나중에 API에서 가져올 데이터
-const mockReservations = [
+const mockReservations: Reservation[] = [
   {
     id: 'res-001',
     eventId: '1',
@@ -41,7 +57,10 @@ const mockReservations = [
   },
 ]
 
-const statusConfig = {
+const statusConfig: Record<
+  ReservationStatus,
+  { label: string; color: string }
+> = {
   confirmed: {
     label: '예약 확정',
     color: 'bg-green-100 text-green-700',
@@ -57,8 +76,8 @@ const statusConfig = {
 }
 
 export default function MyReservations() {
-  const [reservations, setReservations] = useState(mockReservations)
-  const [selectedQR, setSelectedQR] = useState<typeof mockReservations[0] | null>(null)
+  const [reservations, setReservations] = useState<Reservation[]>(mockReservations)
+  const [selectedQR, setSelectedQR] = useState<Reservation | null>(null)
 
   // 예약 취소
   const cancelReservation = (id: string) => {
@@ -93,7 +112,10 @@ export default function MyReservations() {
             <h2 className="text-lg font-bold text-gray-900 mb-3">진행 중인 예약</h2>
             <div className="space-y-4">
               {activeReservations.map((reservation) => (
-                <div key={reservation.id} className="bg-white rounded-2xl overflow-hidden shadow-sm">
+                <div
+                  key={reservation.id}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm"
+                >
                   <div className="flex gap-4 p-4">
                     <img
                       src={reservation.eventImage}
@@ -133,14 +155,14 @@ export default function MyReservations() {
                           className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition flex items-center justify-center gap-1"
                         >
                           <QrCode className="w-4 h-4" />
-                          QR 코드
+                          QR
                         </button>
                         <button
                           onClick={() => cancelReservation(reservation.id)}
                           className="flex-1 py-2 px-4 bg-red-100 text-red-700 rounded-xl text-sm font-medium hover:bg-red-200 transition flex items-center justify-center gap-1"
                         >
                           <Trash2 className="w-4 h-4" />
-                          예약 취소
+                          취소
                         </button>
                       </div>
                     </div>
@@ -245,13 +267,9 @@ export default function MyReservations() {
               </div>
 
               <p className="text-sm text-gray-600 mb-2">예약 번호</p>
-              <p className="text-lg font-mono font-bold text-gray-900 mb-6">
-                {selectedQR.qrCode}
-              </p>
+              <p className="text-lg font-mono font-bold text-gray-900 mb-6">{selectedQR.qrCode}</p>
 
-              <p className="text-xs text-gray-500">
-                입장 시 이 QR 코드를 스캔해주세요
-              </p>
+              <p className="text-xs text-gray-500">입장 시 이 QR 코드를 스캔해주세요</p>
             </div>
           </div>
         </div>

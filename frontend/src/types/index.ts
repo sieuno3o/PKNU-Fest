@@ -192,6 +192,8 @@ export interface CreateMenuItemData {
 
 // Order Types
 export type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED'
+export type PaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED'
+export type PaymentMethod = 'CARD' | 'KAKAO_PAY' | 'TOSS_PAY'
 
 export interface Order {
   id: string
@@ -201,6 +203,9 @@ export interface Order {
   totalAmount: number
   status: OrderStatus
   paymentId?: string
+  paymentMethod?: string
+  paymentStatus: PaymentStatus
+  paidAt?: string
   createdAt: string
   updatedAt: string
   user?: Partial<User>
@@ -225,6 +230,10 @@ export interface CreateOrderData {
     menuItemId: string
     quantity: number
   }[]
+}
+
+export interface ProcessPaymentData {
+  paymentMethod: PaymentMethod
 }
 
 // API Response Types

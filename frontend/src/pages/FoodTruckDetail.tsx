@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, MapPin, Clock, Star, Phone, X, ShoppingCart } from 'lucide-react'
+import { toast } from '@/components/ui/Toast'
 
 // TODO: 나중에 API에서 가져올 데이터
 const mockFoodTruck = {
@@ -88,13 +89,12 @@ export default function FoodTruckDetail() {
     }
 
     localStorage.setItem('cart', JSON.stringify(cart))
+    // Header 업데이트를 위한 커스텀 이벤트 발생
+    window.dispatchEvent(new Event('cartUpdated'))
     setSelectedMenu(null)
 
-    // 장바구니로 이동할지 물어보기
-    const goToCart = confirm('장바구니에 담았어요! 장바구니로 이동할까요?')
-    if (goToCart) {
-      navigate('/cart')
-    }
+    // 토스트 알림
+    toast.success('장바구니에 추가되었습니다!')
   }
 
   // 바로 결제하기

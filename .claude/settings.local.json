@@ -15,7 +15,15 @@
       "Bash(xargs cat:*)",
       "Bash(npx prisma generate:*)",
       "Bash(npm run dev:*)",
-      "Bash(iconv:*)"
+      "Bash(iconv:*)",
+      "Bash(psql:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npm run seed:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxZDVkMWI4MS01MzUwLTRhMTktODk2OS01NTVhM2UwYTFiYzYiLCJlbWFpbCI6InN0dWRlbnQxQHBrbnUuYWMua3IiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc2NTAwMjExNCwiZXhwIjoxNzY1NjA2OTE0fQ.4chAab687_OIX1RUOE6-UxGUqBI8gRyGpZmW9717Arc\")"
     ],
     "deny": [],
     "ask": []

@@ -26,7 +26,13 @@ export const validateQuery = (schema: z.ZodSchema) => {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
       const validated = await schema.parseAsync(req.query)
-      ;(req as any).query = validated
+      // Use Object.defineProperty to override the readonly query property
+      Object.defineProperty(req, 'query', {
+        value: validated,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      })
       return next()
     } catch (error: unknown) {
       if (error instanceof ZodError) {

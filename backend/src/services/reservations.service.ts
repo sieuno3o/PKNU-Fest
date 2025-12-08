@@ -3,6 +3,8 @@ import QRCode from 'qrcode'
 import { randomUUID } from 'crypto'
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/error.util'
 import { CreateReservationInput } from '../utils/validation.schemas'
+import { io } from '../index'
+import { emitReservationUpdate } from '../socket'
 
 export class ReservationsService {
   async createReservation(userId: string, data: CreateReservationInput) {
@@ -77,15 +79,8 @@ export class ReservationsService {
     // Generate UUID for reservation
     const reservationId = randomUUID()
 
-    // Generate QR code data
-    const qrData = JSON.stringify({
-      reservationId,
-      userId,
-      eventId: data.eventId,
-    })
-
-    // Generate QR code
-    const qrCodeDataURL = await QRCode.toDataURL(qrData)
+    // Generate QR code string (we'll generate the actual QR image on-demand)
+    const qrCodeString = `RES-${reservationId}`
 
     // Create reservation with QR code
     const reservation = await prisma.reservation.create({
@@ -96,12 +91,18 @@ export class ReservationsService {
         timeSlotId: data.timeSlotId,
         partySize: data.partySize,
         status: 'CONFIRMED',
-        qrCode: qrCodeDataURL,
+        qrCode: qrCodeString,
       },
       include: {
         event: true,
         timeSlot: true,
       },
+    })
+
+    // Emit Socket.IO event
+    emitReservationUpdate(io, data.eventId, {
+      type: 'created',
+      reservation,
     })
 
     return reservation
@@ -175,6 +176,16 @@ export class ReservationsService {
     const updatedReservation = await prisma.reservation.update({
       where: { id },
       data: { status: 'CANCELLED' },
+      include: {
+        event: true,
+        timeSlot: true,
+      },
+    })
+
+    // Emit Socket.IO event
+    emitReservationUpdate(io, reservation.eventId, {
+      type: 'cancelled',
+      reservation: updatedReservation,
     })
 
     return updatedReservation
@@ -214,6 +225,12 @@ export class ReservationsService {
           },
         },
       },
+    })
+
+    // Emit Socket.IO event
+    emitReservationUpdate(io, reservation.eventId, {
+      type: 'checked_in',
+      reservation: updatedReservation,
     })
 
     return updatedReservation

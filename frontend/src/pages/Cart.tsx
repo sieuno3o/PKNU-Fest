@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
+import { useCreateOrder } from '@/hooks/useOrders'
 
 interface CartItem {
   id: string
@@ -16,6 +17,8 @@ interface CartItem {
 export default function Cart() {
   const navigate = useNavigate()
   const [cart, setCart] = useState<CartItem[]>([])
+  const [isOrdering, setIsOrdering] = useState(false)
+  const createOrderMutation = useCreateOrder()
 
   // 장바구니 불러오기
   useEffect(() => {
@@ -181,14 +184,40 @@ export default function Cart() {
               </span>
             </div>
             <button
-              onClick={() => {
-                alert('주문이 완료되었습니다!')
-                clearCart()
-                navigate('/orders')
+              onClick={async () => {
+                if (isOrdering) return
+
+                // 한 푸드트럭만 지원 (여러 푸드트럭이면 첫 번째 것만)
+                const firstTruckId = Object.keys(groupedCart)[0]
+                if (!firstTruckId) return
+
+                setIsOrdering(true)
+
+                try {
+                  // 주문 생성
+                  const order = await createOrderMutation.mutateAsync({
+                    truckId: firstTruckId,
+                    items: cart.map((item) => ({
+                      menuId: item.menuId,
+                      quantity: item.quantity,
+                    })),
+                  })
+
+                  // 결제 페이지로 이동
+                  navigate(`/checkout?orderId=${order.id}&amount=${totalAmount}`)
+                } catch (error) {
+                  console.error('Order creation failed:', error)
+                  setIsOrdering(false)
+                }
               }}
-              className="w-full py-4 bg-orange-600 text-white rounded-2xl font-bold hover:bg-orange-700 transition"
+              disabled={isOrdering}
+              className={`w-full py-4 rounded-2xl font-bold transition ${
+                isOrdering
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : 'bg-orange-600 text-white hover:bg-orange-700'
+              }`}
             >
-              {totalAmount.toLocaleString()}원 결제하기
+              {isOrdering ? '주문 생성 중...' : `${totalAmount.toLocaleString()}원 결제하기`}
             </button>
           </div>
         </div>

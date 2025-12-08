@@ -103,6 +103,10 @@ export const updateOrderStatusSchema = z.object({
   status: z.enum(['PENDING', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED']),
 })
 
+export const processPaymentSchema = z.object({
+  paymentMethod: z.enum(['CARD', 'KAKAO_PAY', 'TOSS_PAY']),
+})
+
 // TimeSlot Schemas
 export const createTimeSlotSchema = z.object({
   startTime: z.string().datetime(),
@@ -118,3 +122,4 @@ export type CreateReservationInput = z.infer<typeof createReservationSchema>
 export type CreateFoodTruckInput = z.infer<typeof createFoodTruckSchema>
 export type CreateMenuItemInput = z.infer<typeof createMenuItemSchema>
 export type CreateOrderInput = z.infer<typeof createOrderSchema>
+export type ProcessPaymentInput = z.infer<typeof processPaymentSchema>

@@ -158,14 +158,18 @@ model MenuItem {
 
 // Order model - 주문
 model Order {
-  id          String      @id @default(uuid())
-  userId      String
-  foodTruckId String
-  status      OrderStatus @default(PENDING)
-  totalPrice  Int
-  pickupNumber String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String        @id @default(uuid())
+  userId        String
+  foodTruckId   String
+  status        OrderStatus   @default(PENDING)
+  totalPrice    Int
+  pickupNumber  String?
+  paymentId     String?       // 결제 ID (모의 결제에서는 UUID)
+  paymentMethod String?       // 결제 수단 (CARD, KAKAO_PAY, TOSS_PAY)
+  paymentStatus PaymentStatus @default(PENDING) // 결제 상태
+  paidAt        DateTime?     // 결제 완료 시각
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   // Relations
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -181,6 +185,13 @@ enum OrderStatus {
   READY      // 준비 완료
   COMPLETED  // 수령 완료
   CANCELLED  // 취소
+}
+
+enum PaymentStatus {
+  PENDING   // 결제 대기
+  PAID      // 결제 완료
+  CANCELLED // 결제 취소
+  REFUNDED  // 환불 완료
 }
 
 // OrderItem model - 주문 아이템

@@ -3,7 +3,7 @@ import { OrdersController } from '../controllers/orders.controller'
 import { validate } from '../middleware/validation.middleware'
 import { authenticate } from '../middleware/auth.middleware'
 import { requireVendor } from '../middleware/role.middleware'
-import { createOrderSchema, updateOrderStatusSchema } from '../utils/validation.schemas'
+import { createOrderSchema, updateOrderStatusSchema, processPaymentSchema } from '../utils/validation.schemas'
 
 const router = Router()
 const ordersController = new OrdersController()
@@ -21,6 +21,15 @@ router.get('/', (req, res, next) => ordersController.getOrders(req, res, next))
 router.get('/:id', (req, res, next) => ordersController.getOrder(req, res, next))
 
 router.post('/:id/cancel', (req, res, next) => ordersController.cancelOrder(req, res, next))
+
+// Payment routes
+router.post('/:id/payment', validate(processPaymentSchema), (req, res, next) =>
+  ordersController.processPayment(req, res, next)
+)
+
+router.post('/:id/cancel-payment', (req, res, next) =>
+  ordersController.cancelPayment(req, res, next)
+)
 
 // Vendor routes
 router.patch('/:id/status', requireVendor, validate(updateOrderStatusSchema), (req, res, next) =>

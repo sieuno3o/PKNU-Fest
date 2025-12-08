@@ -1,6 +1,9 @@
 import prisma from '../utils/prisma'
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/error.util'
-import { CreateOrderInput } from '../utils/validation.schemas'
+import { CreateOrderInput, ProcessPaymentInput } from '../utils/validation.schemas'
+import { io } from '../index'
+import { emitOrderUpdate } from '../socket'
+import { v4 as uuidv4 } from 'uuid'
 
 export class OrdersService {
   async createOrder(userId: string, data: CreateOrderInput) {
@@ -59,6 +62,9 @@ export class OrdersService {
         foodTruck: true,
       },
     })
+
+    // Emit Socket.IO event
+    emitOrderUpdate(io, order)
 
     return order
   }
@@ -135,6 +141,7 @@ export class OrdersService {
             menuItem: true,
           },
         },
+        foodTruck: true,
         user: {
           select: {
             id: true,
@@ -144,6 +151,9 @@ export class OrdersService {
         },
       },
     })
+
+    // Emit Socket.IO event
+    emitOrderUpdate(io, updatedOrder)
 
     return updatedOrder
   }
@@ -207,5 +217,106 @@ export class OrdersService {
     })
 
     return orders
+  }
+
+  // Payment methods
+  async processPayment(orderId: string, userId: string, data: ProcessPaymentInput) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        foodTruck: true,
+        orderItems: {
+          include: {
+            menuItem: true,
+          },
+        },
+      },
+    })
+
+    if (!order) {
+      throw new NotFoundError('Order not found')
+    }
+
+    if (order.userId !== userId) {
+      throw new ForbiddenError('You do not have access to this order')
+    }
+
+    if (order.paymentStatus !== 'PENDING') {
+      throw new BadRequestError('Payment already processed')
+    }
+
+    // 모의 결제 처리 - 실제 API 호출 없음
+    const paymentId = uuidv4()
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentId,
+        paymentMethod: data.paymentMethod,
+        paymentStatus: 'PAID',
+        paidAt: new Date(),
+      },
+      include: {
+        orderItems: {
+          include: {
+            menuItem: true,
+          },
+        },
+        foodTruck: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    // Emit Socket.IO event
+    emitOrderUpdate(io, updatedOrder)
+
+    return updatedOrder
+  }
+
+  async cancelPayment(orderId: string, userId: string) {
+    const order = await prisma.order.findUnique({ where: { id: orderId } })
+
+    if (!order) {
+      throw new NotFoundError('Order not found')
+    }
+
+    if (order.userId !== userId) {
+      throw new ForbiddenError('You do not have access to this order')
+    }
+
+    if (order.paymentStatus !== 'PAID') {
+      throw new BadRequestError('Can only cancel paid orders')
+    }
+
+    if (order.status !== 'PENDING') {
+      throw new BadRequestError('Cannot cancel payment for orders in progress')
+    }
+
+    const cancelledOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: 'CANCELLED',
+        status: 'CANCELLED',
+      },
+      include: {
+        orderItems: {
+          include: {
+            menuItem: true,
+          },
+        },
+        foodTruck: true,
+      },
+    })
+
+    // Emit Socket.IO event
+    emitOrderUpdate(io, cancelledOrder)
+
+    return cancelledOrder
   }
 }
