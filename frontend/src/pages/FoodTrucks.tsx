@@ -1,70 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, MapPin, Clock, Star } from 'lucide-react'
-
-// TODO: 나중에 API에서 가져올 데이터
-const mockFoodTrucks = [
-  {
-    id: '1',
-    name: '타코야끼 트럭',
-    description: '일본 정통 타코야끼와 오코노미야키를 판매합니다',
-    category: '일식',
-    image: 'https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=500',
-    location: '대운동장 앞',
-    operatingHours: '10:00 - 22:00',
-    rating: 4.8,
-    reviewCount: 127,
-    isOpen: true,
-  },
-  {
-    id: '2',
-    name: '햄버거 트럭',
-    description: '수제 패티로 만든 프리미엄 햄버거',
-    category: '양식',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500',
-    location: '중앙광장',
-    operatingHours: '11:00 - 21:00',
-    rating: 4.6,
-    reviewCount: 95,
-    isOpen: true,
-  },
-  {
-    id: '3',
-    name: '떡볶이 트럭',
-    description: '매콤달콤한 즉석 떡볶이와 튀김',
-    category: '한식',
-    image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=500',
-    location: '인문관 앞',
-    operatingHours: '10:00 - 20:00',
-    rating: 4.7,
-    reviewCount: 203,
-    isOpen: false,
-  },
-  {
-    id: '4',
-    name: '크레페 트럭',
-    description: '달콤한 디저트 크레페',
-    category: '디저트',
-    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500',
-    location: '도서관 앞',
-    operatingHours: '12:00 - 22:00',
-    rating: 4.9,
-    reviewCount: 156,
-    isOpen: true,
-  },
-  {
-    id: '5',
-    name: '치킨 트럭',
-    description: '바삭한 프라이드 치킨',
-    category: '한식',
-    image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500',
-    location: '대운동장',
-    operatingHours: '11:00 - 23:00',
-    rating: 4.5,
-    reviewCount: 89,
-    isOpen: true,
-  },
-]
+import { Search, MapPin, Clock, Star, Loader2 } from 'lucide-react'
+import { useFoodTrucks } from '@/hooks/useFoodTrucks'
 
 const categories = ['전체', '한식', '양식', '일식', '중식', '디저트']
 
@@ -73,14 +10,23 @@ export default function FoodTrucks() {
   const [selectedCategory, setSelectedCategory] = useState('전체')
   const [showOpenOnly, setShowOpenOnly] = useState(false)
 
-  const filteredTrucks = mockFoodTrucks.filter((truck) => {
-    const matchesSearch =
-      truck.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      truck.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === '전체' || truck.category === selectedCategory
-    const matchesOpenFilter = !showOpenOnly || truck.isOpen
-    return matchesSearch && matchesCategory && matchesOpenFilter
+  // API에서 푸드트럭 목록 가져오기
+  const { data: foodTrucks, isLoading, error } = useFoodTrucks({
+    category: selectedCategory === '전체' ? undefined : selectedCategory,
+    isOpen: showOpenOnly || undefined,
   })
+
+  // 검색 필터링 (프론트엔드에서 처리)
+  const filteredTrucks = useMemo(() => {
+    if (!foodTrucks) return []
+
+    return foodTrucks.filter((truck) => {
+      const matchesSearch =
+        truck.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        truck.description.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesSearch
+    })
+  }, [foodTrucks, searchQuery])
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -138,7 +84,16 @@ export default function FoodTrucks() {
 
       {/* 푸드트럭 목록 */}
       <div className="px-4 pb-20">
-        {filteredTrucks.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">😞</div>
+            <p className="text-gray-500">푸드트럭 목록을 불러오는데 실패했습니다</p>
+          </div>
+        ) : filteredTrucks.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🍔</div>
             <p className="text-gray-500">검색 결과가 없습니다</p>

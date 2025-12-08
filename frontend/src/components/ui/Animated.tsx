@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 interface AnimatedProps {
   children: ReactNode
@@ -123,10 +123,10 @@ export function SlideTransition({
     ? direction === 'up'
       ? 'animate-slide-up'
       : direction === 'down'
-      ? 'animate-slide-down'
-      : direction === 'left'
-      ? 'animate-slide-in-left'
-      : 'animate-slide-in-right'
+        ? 'animate-slide-down'
+        : direction === 'left'
+          ? 'animate-slide-in-left'
+          : 'animate-slide-in-right'
     : 'animate-fade-out'
 
   return shouldRender ? (

@@ -1,8 +1,11 @@
 import api from './client'
 import type { ProcessPaymentData } from '../../types'
+import type { Key } from 'react'
 
 // 타입 정의
 export interface OrderItem {
+  id: Key | null | undefined
+  menuItem: any
   menuId: string
   menuName: string
   quantity: number
@@ -12,10 +15,17 @@ export interface OrderItem {
 export interface Order {
   id: string
   orderNumber: number
+  pickupNumber?: string
   userId: string
   userName?: string
+  userPhone?: string
   truckId: string
   truckName: string
+  foodTruck?: {
+    id: string
+    name: string
+    image?: string
+  }
   items: OrderItem[]
   totalAmount: number
   status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled'
@@ -55,8 +65,8 @@ export interface OrderFilters {
 export const ordersApi = {
   // 내 주문 목록 조회
   getMy: async (): Promise<Order[]> => {
-    const response = await api.get<Order[]>('/orders/my')
-    return response.data
+    const response = await api.get<Order[]>('/orders')
+    return Array.isArray(response.data) ? response.data : (response.data as any).data || []
   },
 
   // 주문 상세 조회

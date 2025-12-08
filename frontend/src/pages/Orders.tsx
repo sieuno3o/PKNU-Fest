@@ -1,48 +1,14 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Clock, ChevronRight } from 'lucide-react'
-
-// TODO: 나중에 API에서 가져올 데이터
-const mockOrders = [
-  {
-    id: 'ord-001',
-    truckId: '1',
-    truckName: '타코야끼 트럭',
-    status: 'preparing', // preparing, ready, completed, cancelled
-    items: [
-      { name: '타코야끼 (6개)', quantity: 2, price: 5000 },
-      { name: '오코노미야키', quantity: 1, price: 7000 },
-    ],
-    totalAmount: 17000,
-    orderDate: '2024-12-05T14:30:00',
-    pickupTime: '2024-12-05T15:00:00',
-  },
-  {
-    id: 'ord-002',
-    truckId: '2',
-    truckName: '햄버거 트럭',
-    status: 'ready',
-    items: [{ name: '수제 햄버거', quantity: 1, price: 8500 }],
-    totalAmount: 8500,
-    orderDate: '2024-12-05T13:00:00',
-    pickupTime: '2024-12-05T13:20:00',
-  },
-  {
-    id: 'ord-003',
-    truckId: '4',
-    truckName: '크레페 트럭',
-    status: 'completed',
-    items: [
-      { name: '딸기 크레페', quantity: 2, price: 6000 },
-      { name: '초코 크레페', quantity: 1, price: 6000 },
-    ],
-    totalAmount: 18000,
-    orderDate: '2024-12-04T16:00:00',
-    pickupTime: '2024-12-04T16:15:00',
-  },
-]
+import { Clock, ChevronRight, Loader2 } from 'lucide-react'
+import { useMyOrders } from '@/hooks/useOrders'
 
 const statusConfig = {
+  pending: {
+    label: '주문 접수',
+    color: 'bg-yellow-100 text-yellow-700',
+    description: '주문이 접수되었어요',
+  },
   preparing: {
     label: '준비중',
     color: 'bg-blue-100 text-blue-700',
@@ -68,15 +34,23 @@ const statusConfig = {
 export default function Orders() {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
-  const filteredOrders = mockOrders.filter((order) => {
-    if (filter === 'active') {
-      return order.status === 'preparing' || order.status === 'ready'
-    }
-    if (filter === 'completed') {
-      return order.status === 'completed' || order.status === 'cancelled'
-    }
-    return true
-  })
+  // API에서 주문 목록 가져오기
+  const { data: orders, isLoading, error } = useMyOrders()
+
+  // 필터링
+  const filteredOrders = useMemo(() => {
+    if (!orders) return []
+
+    return orders.filter((order) => {
+      if (filter === 'active') {
+        return order.status === 'pending' || order.status === 'preparing' || order.status === 'ready'
+      }
+      if (filter === 'completed') {
+        return order.status === 'completed' || order.status === 'cancelled'
+      }
+      return true
+    })
+  }, [orders, filter])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -100,31 +74,28 @@ export default function Orders() {
         <div className="flex gap-2">
           <button
             onClick={() => setFilter('all')}
-            className={`flex-1 py-2 px-4 rounded-xl font-medium transition ${
-              filter === 'all'
+            className={`flex-1 py-2 px-4 rounded-xl font-medium transition ${filter === 'all'
                 ? 'bg-orange-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             전체
           </button>
           <button
             onClick={() => setFilter('active')}
-            className={`flex-1 py-2 px-4 rounded-xl font-medium transition ${
-              filter === 'active'
+            className={`flex-1 py-2 px-4 rounded-xl font-medium transition ${filter === 'active'
                 ? 'bg-orange-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             진행중
           </button>
           <button
             onClick={() => setFilter('completed')}
-            className={`flex-1 py-2 px-4 rounded-xl font-medium transition ${
-              filter === 'completed'
+            className={`flex-1 py-2 px-4 rounded-xl font-medium transition ${filter === 'completed'
                 ? 'bg-orange-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             완료
           </button>
@@ -133,7 +104,16 @@ export default function Orders() {
 
       {/* 주문 목록 */}
       <div className="p-4 pb-20">
-        {filteredOrders.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">😞</div>
+            <p className="text-gray-500">주문 내역을 불러오는데 실패했습니다</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">📦</div>
             <p className="text-gray-500">주문 내역이 없습니다</p>
@@ -146,33 +126,31 @@ export default function Orders() {
                 to={`/orders/${order.id}`}
                 className="block bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition"
               >
-                {/* 상태 및 푸드트럭명 */}
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900">{order.truckName}</h3>
-                    <span className="text-sm text-gray-500">주문번호: {order.id}</span>
+                    <h3 className="font-bold text-lg text-gray-900">{order.foodTruck?.name || '푸드트럭'}</h3>
+                    <span className="text-sm text-gray-500">픽업번호: {order.pickupNumber || order.id.slice(0, 8)}</span>
                   </div>
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      statusConfig[order.status as keyof typeof statusConfig].color
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm font-bold ${statusConfig[order.status as keyof typeof statusConfig]?.color || 'bg-gray-100 text-gray-700'
+                      }`}
                   >
-                    {statusConfig[order.status as keyof typeof statusConfig].label}
+                    {statusConfig[order.status as keyof typeof statusConfig]?.label || order.status}
                   </span>
                 </div>
 
                 {/* 주문 항목 */}
                 <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">
-                  {order.items.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
+                  {order.items?.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between text-sm">
                       <span className="text-gray-700">
-                        {item.name} x {item.quantity}
+                        {item.menuItem?.name || '메뉴'} x {item.quantity}
                       </span>
                       <span className="text-gray-900 font-medium">
                         {(item.price * item.quantity).toLocaleString()}원
                       </span>
                     </div>
-                  ))}
+                  )) || []}
                 </div>
 
                 {/* 총 금액 */}
@@ -187,7 +165,7 @@ export default function Orders() {
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    <span>주문: {formatDate(order.orderDate)}</span>
+                    <span>주문: {formatDate(order.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <ChevronRight className="w-4 h-4" />
@@ -195,13 +173,16 @@ export default function Orders() {
                 </div>
 
                 {/* 상태 설명 */}
-                {(order.status === 'preparing' || order.status === 'ready') && (
+                {(order.status === 'pending' || order.status === 'preparing' || order.status === 'ready') && (
                   <div
-                    className={`mt-3 p-3 rounded-xl text-sm font-medium ${
-                      order.status === 'ready' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'
-                    }`}
+                    className={`mt-3 p-3 rounded-xl text-sm font-medium ${order.status === 'ready'
+                        ? 'bg-green-50 text-green-700'
+                        : order.status === 'preparing'
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-yellow-50 text-yellow-700'
+                      }`}
                   >
-                    {statusConfig[order.status].description}
+                    {statusConfig[order.status]?.description || '주문 처리 중'}
                   </div>
                 )}
               </Link>

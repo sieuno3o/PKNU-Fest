@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   reservationsApi,
-  CreateReservationRequest,
-  UpdateReservationRequest,
-  ReservationFilters,
+  type CreateReservationRequest,
+  type UpdateReservationRequest,
+  type ReservationFilters,
 } from '@/lib/api/reservations'
 import { toast } from '@/components/ui/Toast'
 

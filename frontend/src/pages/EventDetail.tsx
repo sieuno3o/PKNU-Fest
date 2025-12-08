@@ -1,61 +1,93 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Calendar, Clock, MapPin, Users, GraduationCap, Share2, Heart, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Users, GraduationCap, Share2, Heart, AlertCircle, Loader2 } from 'lucide-react'
+import { useEvent } from '@/hooks/useEvents'
 
-// TODO: 나중에 API에서 가져올 데이터
-const mockEvent = {
-  id: '1',
-  title: '아이유 콘서트',
-  category: '공연',
-  date: '2025-05-13',
-  time: '19:00',
-  endTime: '21:00',
-  location: '대운동장',
-  locationDetail: '야외 특설 무대',
-  capacity: 5000,
-  reserved: 3500,
-  isStudentOnly: false,
-  organizer: '축제 기획팀',
-  description: `부경대학교 2025 봄 축제의 하이라이트!
+// 카테고리별 색상 매핑
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    '공연': 'from-pink-500 to-purple-600',
+    '체험': 'from-orange-500 to-red-600',
+    '게임': 'from-blue-500 to-cyan-600',
+    '토크': 'from-indigo-500 to-purple-600',
+    '기타': 'from-green-500 to-emerald-600',
+  }
+  return colors[category] || 'from-gray-500 to-gray-600'
+}
 
-국민 여동생 아이유가 부경대학교를 찾아옵니다.
-따뜻한 봄날 밤, 아이유의 감미로운 목소리와 함께
-잊지 못할 추억을 만들어보세요.
-
-✨ 세트리스트
-- 좋은 날
-- 밤편지
-- Blueming
-- 라일락
-- Love wins all
-그 외 다수
-
-🎫 입장 안내
-- 예약자 QR코드 필수
-- 행사 시작 30분 전부터 입장 가능
-- 좌석은 선착순 자유석
-
-⚠️ 주의사항
-- 우천 시 실내 체육관으로 변경 (별도 안내)
-- 촬영 및 녹음 금지
-- 음료 반입 가능 (주류 X)`,
-  thumbnail: null,
-  images: [],
-  status: 'PUBLISHED',
-  color: 'from-pink-500 to-purple-600',
+// 카테고리별 이모지 매핑
+const getCategoryEmoji = (category: string) => {
+  const emojis: Record<string, string> = {
+    '공연': '🎵',
+    '체험': '🎨',
+    '게임': '🎮',
+    '토크': '💬',
+    '기타': '🎪',
+  }
+  return emojis[category] || '🎪'
 }
 
 export default function EventDetail() {
-  const { id } = useParams()
+  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [isLiked, setIsLiked] = useState(false)
   const [showReservationModal, setShowReservationModal] = useState(false)
 
-  // TODO: 실제로는 API에서 가져오기
-  const event = mockEvent
+  // API에서 이벤트 데이터 가져오기
+  const { data: event, isLoading, error } = useEvent(id!)
 
-  const reservationPercentage = (event.reserved / event.capacity) * 100
-  const isFull = event.reserved >= event.capacity
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-900 mb-1">데이터를 불러올 수 없습니다</h3>
+              <p className="text-sm text-red-800">
+                {error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'}
+              </p>
+              <button
+                onClick={() => navigate(-1)}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                돌아가기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!event) {
+    return (
+      <div className="p-4">
+        <div className="text-center py-12">
+          <p className="text-gray-500">행사를 찾을 수 없습니다</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            돌아가기
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const reservationPercentage = event.capacity
+    ? (event.currentReservations / event.capacity) * 100
+    : 0
+  const isFull = event.capacity ? event.currentReservations >= event.capacity : false
 
   const handleShare = () => {
     // TODO: 공유 기능 구현
@@ -70,7 +102,7 @@ export default function EventDetail() {
     <>
       <div className="pb-4">
         {/* 헤더 이미지 */}
-        <div className={`relative h-64 bg-gradient-to-br ${event.color}`}>
+        <div className={`relative h-64 bg-gradient-to-br ${getCategoryColor(event.category)}`}>
           {/* 뒤로가기 & 액션 버튼 */}
           <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between">
             <button
@@ -95,13 +127,19 @@ export default function EventDetail() {
             </div>
           </div>
 
-          {/* 이모지 아이콘 */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-white text-8xl">🎵</div>
-          </div>
+          {/* 이미지 또는 이모지 */}
+          {event.image ? (
+            <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-white text-8xl">
+                {getCategoryEmoji(event.category)}
+              </div>
+            </div>
+          )}
 
           {/* 학생 전용 배지 */}
-          {event.isStudentOnly && (
+          {event.requiresStudentVerification && (
             <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-blue-600" />
               <span className="text-sm font-bold text-blue-600">학생 전용</span>
@@ -115,7 +153,15 @@ export default function EventDetail() {
             {event.category}
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{event.title}</h1>
-          <p className="text-gray-600 mb-4">주최: {event.organizer}</p>
+          {event.tags && event.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {event.tags.map((tag, idx) => (
+                <span key={idx} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* 날짜/시간/장소 */}
           <div className="space-y-3">
@@ -123,48 +169,49 @@ export default function EventDetail() {
               <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="font-medium text-gray-900">{event.date}</p>
-                <p className="text-sm text-gray-600">{event.time} ~ {event.endTime}</p>
+                <p className="text-sm text-gray-600">{event.startTime} ~ {event.endTime}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="font-medium text-gray-900">{event.location}</p>
-                <p className="text-sm text-gray-600">{event.locationDetail}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* 예약 현황 */}
-        <div className="bg-gray-50 px-4 py-6">
-          <div className="bg-white rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-gray-700" />
-                <span className="font-semibold text-gray-900">예약 현황</span>
+        {event.capacity && (
+          <div className="bg-gray-50 px-4 py-6">
+            <div className="bg-white rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-gray-700" />
+                  <span className="font-semibold text-gray-900">예약 현황</span>
+                </div>
+                <span className="text-lg font-bold text-gray-900">
+                  {event.currentReservations}/{event.capacity}
+                </span>
               </div>
-              <span className="text-lg font-bold text-gray-900">
-                {event.reserved}/{event.capacity}
-              </span>
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mb-2">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    reservationPercentage > 80
+                      ? 'bg-red-500'
+                      : reservationPercentage > 50
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500'
+                  }`}
+                  style={{ width: `${reservationPercentage}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-600 text-center">
+                {isFull ? '예약 마감' : `${event.capacity - event.currentReservations}자리 남음`}
+              </p>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mb-2">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  reservationPercentage > 80
-                    ? 'bg-red-500'
-                    : reservationPercentage > 50
-                    ? 'bg-yellow-500'
-                    : 'bg-green-500'
-                }`}
-                style={{ width: `${reservationPercentage}%` }}
-              />
-            </div>
-            <p className="text-sm text-gray-600 text-center">
-              {isFull ? '예약 마감' : `${event.capacity - event.reserved}자리 남음`}
-            </p>
           </div>
-        </div>
+        )}
 
         {/* 상세 설명 */}
         <div className="bg-white px-4 py-6">
@@ -177,7 +224,7 @@ export default function EventDetail() {
         </div>
 
         {/* 주의사항 (학생 전용인 경우) */}
-        {event.isStudentOnly && (
+        {event.requiresStudentVerification && (
           <div className="bg-blue-50 mx-4 rounded-2xl p-4 mb-4">
             <div className="flex gap-3">
               <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -221,7 +268,18 @@ export default function EventDetail() {
 }
 
 // 예약 모달 컴포넌트
-function ReservationModal({ event, onClose }: { event: typeof mockEvent; onClose: () => void }) {
+interface ReservationModalProps {
+  event: {
+    id: string
+    title: string
+    date: string
+    startTime: string
+    location: string
+  }
+  onClose: () => void
+}
+
+function ReservationModal({ event, onClose }: ReservationModalProps) {
   const [partySize, setPartySize] = useState(1)
   const navigate = useNavigate()
 
@@ -244,7 +302,7 @@ function ReservationModal({ event, onClose }: { event: typeof mockEvent; onClose
           <div className="space-y-1 text-sm text-gray-600">
             <p className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              {event.date} {event.time}
+              {event.date} {event.startTime}
             </p>
             <p className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />

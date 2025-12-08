@@ -1,84 +1,37 @@
 import { useState } from 'react'
-import { Plus, Search, Edit2, Trash2, Calendar, MapPin, Users, X, Check } from 'lucide-react'
-
-interface Event {
-  id: string
-  title: string
-  category: string
-  description: string
-  date: string
-  time: string
-  location: string
-  capacity: number
-  currentReservations: number
-  status: 'active' | 'scheduled' | 'ended'
-  image: string
-}
-
-// TODO: 나중에 API에서 가져올 데이터
-const mockEvents: Event[] = [
-  {
-    id: '1',
-    title: '아이유 콘서트',
-    category: '공연',
-    description: '아이유의 특별한 공연',
-    date: '2024-12-15',
-    time: '19:00',
-    location: '대운동장',
-    capacity: 300,
-    currentReservations: 243,
-    status: 'active',
-    image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400',
-  },
-  {
-    id: '2',
-    title: '체험 부스 - AR/VR',
-    category: '체험',
-    description: '최신 AR/VR 기술 체험',
-    date: '2024-12-16',
-    time: '14:00',
-    location: '공학관',
-    capacity: 200,
-    currentReservations: 156,
-    status: 'scheduled',
-    image: 'https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=400',
-  },
-  {
-    id: '3',
-    title: '게임 대회',
-    category: '대회',
-    description: 'e-스포츠 토너먼트',
-    date: '2024-12-10',
-    time: '14:00',
-    location: '학생회관',
-    capacity: 150,
-    currentReservations: 150,
-    status: 'ended',
-    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400',
-  },
-]
+import { Plus, Search, Edit2, Trash2, Calendar, MapPin, Users, X, Check, Loader2 } from 'lucide-react'
+import { useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from '@/hooks/useEvents'
+import type { Event, CreateEventRequest } from '@/lib/api/events'
+import { toast } from '@/components/ui/Toast'
 
 export default function EventManagement() {
-  const [events, setEvents] = useState<Event[]>(mockEvents)
+  // API Hooks
+  const { data: events, isLoading, error } = useEvents()
+  const createEvent = useCreateEvent()
+  const updateEvent = useUpdateEvent()
+  const deleteEvent = useDeleteEvent()
+
+  // Local State
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'scheduled' | 'ended'>(
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'upcoming' | 'ongoing' | 'ended'>(
     'all'
   )
   const [showModal, setShowModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
-  const [formData, setFormData] = useState<Partial<Event>>({
+  const [formData, setFormData] = useState<Partial<CreateEventRequest>>({
     title: '',
     category: '',
     description: '',
     date: '',
-    time: '',
+    startTime: '',
+    endTime: '',
     location: '',
     capacity: 0,
-    status: 'scheduled',
+    requiresStudentVerification: false,
   })
 
   // 필터링
-  const filteredEvents = events.filter((event) => {
+  const filteredEvents = (events || []).filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -94,10 +47,11 @@ export default function EventManagement() {
       category: '',
       description: '',
       date: '',
-      time: '',
+      startTime: '',
+      endTime: '',
       location: '',
       capacity: 0,
-      status: 'scheduled',
+      requiresStudentVerification: false,
     })
     setShowModal(true)
   }
@@ -105,52 +59,93 @@ export default function EventManagement() {
   // 행사 수정
   const handleEdit = (event: Event) => {
     setEditingEvent(event)
-    setFormData(event)
+    setFormData({
+      title: event.title,
+      category: event.category,
+      description: event.description,
+      date: event.date,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      location: event.location,
+      capacity: event.capacity,
+      requiresStudentVerification: event.requiresStudentVerification,
+      image: event.image,
+      tags: event.tags,
+    })
     setShowModal(true)
   }
 
   // 행사 삭제
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('정말 이 행사를 삭제하시겠습니까?')) {
-      setEvents(events.filter((e) => e.id !== id))
-      alert('행사가 삭제되었습니다.')
+      try {
+        await deleteEvent.mutateAsync(id)
+      } catch (error) {
+        toast.error('행사 삭제에 실패했습니다.')
+      }
     }
   }
 
   // 폼 제출
-  const handleSubmit = () => {
-    if (!formData.title || !formData.date || !formData.time || !formData.location) {
-      alert('필수 항목을 모두 입력해주세요.')
+  const handleSubmit = async () => {
+    if (!formData.title || !formData.date || !formData.startTime || !formData.location) {
+      toast.error('필수 항목을 모두 입력해주세요.')
       return
     }
 
-    if (editingEvent) {
-      // 수정
-      setEvents(
-        events.map((e) =>
-          e.id === editingEvent.id ? { ...e, ...formData } as Event : e
-        )
-      )
-      alert('행사가 수정되었습니다.')
-    } else {
-      // 추가
-      const newEvent: Event = {
-        id: `event-${Date.now()}`,
-        ...formData,
-        currentReservations: 0,
-        image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400',
-      } as Event
-      setEvents([newEvent, ...events])
-      alert('행사가 추가되었습니다.')
+    try {
+      if (editingEvent) {
+        // 수정
+        await updateEvent.mutateAsync({
+          id: editingEvent.id,
+          data: formData,
+        })
+      } else {
+        // 추가
+        await createEvent.mutateAsync(formData as CreateEventRequest)
+      }
+      setShowModal(false)
+    } catch (error) {
+      toast.error(editingEvent ? '행사 수정에 실패했습니다.' : '행사 추가에 실패했습니다.')
     }
-
-    setShowModal(false)
   }
 
   const statusConfig = {
-    active: { label: '진행중', color: 'bg-green-100 text-green-700' },
-    scheduled: { label: '예정', color: 'bg-blue-100 text-blue-700' },
+    ongoing: { label: '진행중', color: 'bg-green-100 text-green-700' },
+    upcoming: { label: '예정', color: 'bg-blue-100 text-blue-700' },
     ended: { label: '종료', color: 'bg-gray-100 text-gray-700' },
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-gray-50 pb-20">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+          <h1 className="text-2xl font-bold mb-2">행사 관리</h1>
+          <p className="text-blue-100">축제 행사를 등록하고 관리하세요</p>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-full bg-gray-50 pb-20">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+          <h1 className="text-2xl font-bold mb-2">행사 관리</h1>
+          <p className="text-blue-100">축제 행사를 등록하고 관리하세요</p>
+        </div>
+        <div className="flex flex-col items-center justify-center py-20">
+          <X className="w-20 h-20 text-red-500 mb-4" />
+          <p className="text-gray-700 text-lg font-medium">행사 목록을 불러오는데 실패했습니다.</p>
+          <p className="text-gray-500 text-sm mt-2">잠시 후 다시 시도해주세요.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -184,15 +179,14 @@ export default function EventManagement() {
         </div>
 
         <div className="flex gap-2">
-          {(['all', 'active', 'scheduled', 'ended'] as const).map((status) => (
+          {(['all', 'ongoing', 'upcoming', 'ended'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-                selectedStatus === status
+              className={`px-3 py-1 rounded-full text-sm font-medium transition ${selectedStatus === status
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {status === 'all' ? '전체' : statusConfig[status].label}
             </button>
@@ -223,9 +217,8 @@ export default function EventManagement() {
                       <span className="text-xs text-gray-600">{event.category}</span>
                     </div>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        statusConfig[event.status].color
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs font-bold ${statusConfig[event.status].color
+                        }`}
                     >
                       {statusConfig[event.status].label}
                     </span>
@@ -235,7 +228,7 @@ export default function EventManagement() {
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
                       <span>
-                        {event.date} {event.time}
+                        {event.date} {event.startTime} - {event.endTime}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -325,22 +318,32 @@ export default function EventManagement() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">날짜 *</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">날짜 *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">시작 시간 *</label>
                   <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    type="time"
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">시간 *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">종료 시간</label>
                   <input
                     type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -371,21 +374,17 @@ export default function EventManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">상태</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      status: e.target.value as 'active' | 'scheduled' | 'ended',
-                    })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="scheduled">예정</option>
-                  <option value="active">진행중</option>
-                  <option value="ended">종료</option>
-                </select>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.requiresStudentVerification}
+                    onChange={(e) =>
+                      setFormData({ ...formData, requiresStudentVerification: e.target.checked })
+                    }
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">학생 인증 필요</span>
+                </label>
               </div>
 
               <button

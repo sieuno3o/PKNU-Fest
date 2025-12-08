@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Plus,
   Search,
@@ -12,77 +12,56 @@ import {
   AlertCircle,
   ToggleLeft,
   ToggleRight,
+  Loader2,
+  XCircle,
 } from 'lucide-react'
-
-interface MenuItem {
-  id: string
-  name: string
-  description: string
-  price: number
-  category: string
-  image: string
-  available: boolean
-  stock: number
-}
-
-// TODO: 실제로는 API에서 가져올 데이터
-const mockMenuItems: MenuItem[] = [
-  {
-    id: 'menu-1',
-    name: '치즈 떡볶이',
-    description: '매콤달콤한 떡볶이에 고소한 치즈를 듬뿍',
-    price: 5000,
-    category: '메인',
-    image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400',
-    available: true,
-    stock: 50,
-  },
-  {
-    id: 'menu-2',
-    name: '핫도그',
-    description: '바삭한 핫도그에 케첩과 머스터드',
-    price: 3000,
-    category: '메인',
-    image: 'https://images.unsplash.com/photo-1612392062422-ef19b42f74df?w=400',
-    available: true,
-    stock: 30,
-  },
-  {
-    id: 'menu-3',
-    name: '콜라',
-    description: '시원한 탄산음료',
-    price: 2000,
-    category: '음료',
-    image: 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=400',
-    available: true,
-    stock: 100,
-  },
-  {
-    id: 'menu-4',
-    name: '타코야키',
-    description: '겉은 바삭 속은 촉촉한 일본식 간식',
-    price: 4000,
-    category: '사이드',
-    image: 'https://images.unsplash.com/photo-1625395005224-0fce76b6aaae?w=400',
-    available: false,
-    stock: 0,
-  },
-]
+import {
+  useFoodTruckMenu,
+  useCreateMenu,
+  useUpdateMenu,
+  useDeleteMenu,
+  useToggleMenuAvailability,
+} from '@/hooks/useFoodTrucks'
+import { useFoodTrucks } from '@/hooks/useFoodTrucks'
+import { useAuth } from '@/hooks/useAuth'
+import type { Menu } from '@/lib/api/foodtrucks'
 
 export default function MenuManagement() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems)
+  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [showModal, setShowModal] = useState(false)
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
-  const [formData, setFormData] = useState<Partial<MenuItem>>({
+  const [editingItem, setEditingItem] = useState<Menu | null>(null)
+  const [formData, setFormData] = useState<Partial<Menu>>({
     name: '',
     description: '',
     price: 0,
     category: '메인',
-    available: true,
+    isAvailable: true,
     stock: 0,
   })
+
+  // Get vendor's food truck
+  const { data: foodTrucks, isLoading: loadingTrucks } = useFoodTrucks()
+  const vendorTruck = useMemo(
+    () => foodTrucks?.find((truck) => truck.ownerId === user?.id),
+    [foodTrucks, user?.id]
+  )
+
+  // Fetch menu for the vendor's truck
+  const {
+    data: menuItems = [],
+    isLoading: loadingMenu,
+    error: menuError,
+  } = useFoodTruckMenu(vendorTruck?.id || '')
+
+  // Mutations
+  const createMenu = useCreateMenu()
+  const updateMenu = useUpdateMenu()
+  const deleteMenu = useDeleteMenu()
+  const toggleAvailability = useToggleMenuAvailability()
+
+  const isLoading = loadingTrucks || loadingMenu
 
   // 카테고리 목록
   const categories = ['all', '메인', '사이드', '음료', '디저트']
@@ -104,34 +83,25 @@ export default function MenuManagement() {
       description: '',
       price: 0,
       category: '메인',
-      available: true,
+      isAvailable: true,
       stock: 0,
     })
     setShowModal(true)
   }
 
   // 메뉴 수정
-  const handleEdit = (item: MenuItem) => {
+  const handleEdit = (item: Menu) => {
     setEditingItem(item)
     setFormData(item)
     setShowModal(true)
   }
 
+
   // 메뉴 삭제
   const handleDelete = (id: string) => {
     if (confirm('정말 이 메뉴를 삭제하시겠습니까?')) {
-      setMenuItems(menuItems.filter((item) => item.id !== id))
-      alert('메뉴가 삭제되었습니다.')
+      deleteMenu.mutate({ truckId: vendorTruck?.id || '', menuId: id })
     }
-  }
-
-  // 재고 토글
-  const toggleAvailability = (id: string) => {
-    setMenuItems(
-      menuItems.map((item) =>
-        item.id === id ? { ...item, available: !item.available } : item
-      )
-    )
   }
 
   // 폼 제출
@@ -141,23 +111,24 @@ export default function MenuManagement() {
       return
     }
 
+    if (!vendorTruck?.id) {
+      alert('푸드트럭 정보를 찾을 수 없습니다.')
+      return
+    }
+
     if (editingItem) {
       // 수정
-      setMenuItems(
-        menuItems.map((item) =>
-          item.id === editingItem.id ? { ...item, ...formData } as MenuItem : item
-        )
-      )
-      alert('메뉴가 수정되었습니다.')
+      updateMenu.mutate({
+        truckId: vendorTruck.id,
+        menuId: editingItem.id,
+        data: formData as any,
+      })
     } else {
       // 추가
-      const newItem: MenuItem = {
-        id: `menu-${Date.now()}`,
-        ...formData,
-        image: formData.image || 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
-      } as MenuItem
-      setMenuItems([newItem, ...menuItems])
-      alert('메뉴가 추가되었습니다.')
+      createMenu.mutate({
+        truckId: vendorTruck.id,
+        data: formData as any,
+      })
     }
 
     setShowModal(false)
@@ -166,8 +137,8 @@ export default function MenuManagement() {
   // 통계
   const stats = {
     total: menuItems.length,
-    available: menuItems.filter((item) => item.available).length,
-    outOfStock: menuItems.filter((item) => !item.available || item.stock === 0).length,
+    available: menuItems.filter((item) => item.isAvailable).length,
+    outOfStock: menuItems.filter((item) => !item.isAvailable || item.stock === 0).length,
   }
 
   return (
@@ -223,11 +194,10 @@ export default function MenuManagement() {
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition whitespace-nowrap ${
-                selectedCategory === category
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition whitespace-nowrap ${selectedCategory === category
+                ? 'bg-orange-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               {category === 'all' ? '전체' : category}
             </button>
@@ -258,12 +228,19 @@ export default function MenuManagement() {
                       <span className="text-xs text-gray-600">{item.category}</span>
                     </div>
                     <button
-                      onClick={() => toggleAvailability(item.id)}
-                      className={`ml-2 ${
-                        item.available ? 'text-green-600' : 'text-gray-400'
-                      }`}
+                      onClick={() => {
+                        if (vendorTruck?.id) {
+                          toggleAvailability.mutate({
+                            truckId: vendorTruck.id,
+                            menuId: item.id,
+                            isAvailable: !item.isAvailable,
+                          })
+                        }
+                      }}
+                      className={`ml-2 ${item.isAvailable ? 'text-green-600' : 'text-gray-400'
+                        }`}
                     >
-                      {item.available ? (
+                      {item.isAvailable ? (
                         <ToggleRight className="w-10 h-10" />
                       ) : (
                         <ToggleLeft className="w-10 h-10" />
@@ -287,13 +264,12 @@ export default function MenuManagement() {
                       </div>
                     </div>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        item.available
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs font-bold ${item.isAvailable
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-700'
+                        }`}
                     >
-                      {item.available ? '판매중' : '품절'}
+                      {item.isAvailable ? '판매중' : '품절'}
                     </span>
                   </div>
 
@@ -424,14 +400,14 @@ export default function MenuManagement() {
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  id="available"
-                  checked={formData.available}
+                  id="isAvailable"
+                  checked={formData.isAvailable}
                   onChange={(e) =>
-                    setFormData({ ...formData, available: e.target.checked })
+                    setFormData({ ...formData, isAvailable: e.target.checked })
                   }
                   className="w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
                 />
-                <label htmlFor="available" className="text-sm font-medium text-gray-700">
+                <label htmlFor="isAvailable" className="text-sm font-medium text-gray-700">
                   판매 가능
                 </label>
               </div>

@@ -1,64 +1,11 @@
 import { useState } from 'react'
-import { Calendar, MapPin, Clock, Users, QrCode, X, Trash2 } from 'lucide-react'
+import { Calendar, MapPin, Clock, Users, QrCode, X, Trash2, Loader2 } from 'lucide-react'
+import { useMyReservations, useCancelReservation } from '@/hooks/useReservations'
+import type { Reservation } from '@/stores/reservationStore'
 
-// 타입 정의
-type ReservationStatus = 'confirmed' | 'cancelled' | 'completed'
-
-interface Reservation {
-  id: string
-  eventId: string
-  eventName: string
-  eventImage: string
-  date: string
-  time: string
-  location: string
-  partySize: number
-  status: ReservationStatus
-  qrCode: string
-}
-
-// TODO: 나중에 API에서 가져올 데이터
-const mockReservations: Reservation[] = [
-  {
-    id: 'res-001',
-    eventId: '1',
-    eventName: '아이유 콘서트',
-    eventImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400',
-    date: '2024-12-15',
-    time: '19:00',
-    location: '대운동장',
-    partySize: 2,
-    status: 'confirmed', // confirmed, cancelled, completed
-    qrCode: 'RES-001-2024',
-  },
-  {
-    id: 'res-002',
-    eventId: '2',
-    eventName: '체험 부스 - AR/VR',
-    eventImage: 'https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=400',
-    date: '2024-12-16',
-    time: '14:00',
-    location: '공학관',
-    partySize: 1,
-    status: 'confirmed',
-    qrCode: 'RES-002-2024',
-  },
-  {
-    id: 'res-003',
-    eventId: '3',
-    eventName: '게임 대회',
-    eventImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400',
-    date: '2024-12-10',
-    time: '14:00',
-    location: '학생회관',
-    partySize: 4,
-    status: 'completed',
-    qrCode: 'RES-003-2024',
-  },
-]
-
+// 상태 매핑
 const statusConfig: Record<
-  ReservationStatus,
+  string,
   { label: string; color: string }
 > = {
   confirmed: {
@@ -69,24 +16,32 @@ const statusConfig: Record<
     label: '취소됨',
     color: 'bg-red-100 text-red-700',
   },
-  completed: {
+  'checked-in': {
     label: '이용 완료',
+    color: 'bg-blue-100 text-blue-700',
+  },
+  'no-show': {
+    label: '노쇼',
     color: 'bg-gray-100 text-gray-700',
   },
 }
 
 export default function MyReservations() {
-  const [reservations, setReservations] = useState<Reservation[]>(mockReservations)
   const [selectedQR, setSelectedQR] = useState<Reservation | null>(null)
 
+  // API 호출
+  const { data: reservations = [], isLoading, error } = useMyReservations()
+  const cancelMutation = useCancelReservation()
+
   // 예약 취소
-  const cancelReservation = (id: string) => {
+  const handleCancelReservation = async (id: string) => {
     const confirmed = confirm('예약을 취소하시겠습니까?')
     if (confirmed) {
-      setReservations((prev) =>
-        prev.map((res) => (res.id === id ? { ...res, status: 'cancelled' as const } : res))
-      )
-      alert('예약이 취소되었습니다.')
+      try {
+        await cancelMutation.mutateAsync(id)
+      } catch (error) {
+        console.error('Failed to cancel reservation:', error)
+      }
     }
   }
 
@@ -94,8 +49,41 @@ export default function MyReservations() {
   const activeReservations = reservations.filter((res) => res.status === 'confirmed')
   // 완료/취소된 예약
   const pastReservations = reservations.filter(
-    (res) => res.status === 'completed' || res.status === 'cancelled'
+    (res) => res.status === 'checked-in' || res.status === 'cancelled' || res.status === 'no-show'
   )
+
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-gray-50 pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">예약 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 에러 상태
+  if (error) {
+    return (
+      <div className="min-h-full bg-gray-50 pb-20 flex items-center justify-center">
+        <div className="text-center px-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">오류가 발생했습니다</h2>
+          <p className="text-gray-600 mb-4">예약 정보를 불러올 수 없습니다.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-full bg-gray-50 pb-20">
@@ -118,7 +106,7 @@ export default function MyReservations() {
                 >
                   <div className="flex gap-4 p-4">
                     <img
-                      src={reservation.eventImage}
+                      src={'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400'}
                       alt={reservation.eventName}
                       className="w-24 h-24 object-cover rounded-xl"
                     />
@@ -126,9 +114,8 @@ export default function MyReservations() {
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-bold text-lg text-gray-900">{reservation.eventName}</h3>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            statusConfig[reservation.status].color
-                          }`}
+                          className={`px-2 py-1 rounded-full text-xs font-bold ${statusConfig[reservation.status].color
+                            }`}
                         >
                           {statusConfig[reservation.status].label}
                         </span>
@@ -137,17 +124,19 @@ export default function MyReservations() {
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            {reservation.date} {reservation.time}
+                            {reservation.eventDate} {reservation.eventTime}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <MapPin className="w-4 h-4" />
                           <span>{reservation.location}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          <span>{reservation.partySize}명</span>
-                        </div>
+                        {reservation.attendees && (
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            <span>{reservation.attendees}명</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -158,10 +147,15 @@ export default function MyReservations() {
                           QR
                         </button>
                         <button
-                          onClick={() => cancelReservation(reservation.id)}
-                          className="flex-1 py-2 px-4 bg-red-100 text-red-700 rounded-xl text-sm font-medium hover:bg-red-200 transition flex items-center justify-center gap-1"
+                          onClick={() => handleCancelReservation(reservation.id)}
+                          disabled={cancelMutation.isPending}
+                          className="flex-1 py-2 px-4 bg-red-100 text-red-700 rounded-xl text-sm font-medium hover:bg-red-200 transition flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {cancelMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                           취소
                         </button>
                       </div>
@@ -185,7 +179,7 @@ export default function MyReservations() {
                 >
                   <div className="flex gap-4 p-4">
                     <img
-                      src={reservation.eventImage}
+                      src={'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400'}
                       alt={reservation.eventName}
                       className="w-24 h-24 object-cover rounded-xl grayscale"
                     />
@@ -193,9 +187,8 @@ export default function MyReservations() {
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-bold text-lg text-gray-900">{reservation.eventName}</h3>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            statusConfig[reservation.status].color
-                          }`}
+                          className={`px-2 py-1 rounded-full text-xs font-bold ${statusConfig[reservation.status].color
+                            }`}
                         >
                           {statusConfig[reservation.status].label}
                         </span>
@@ -204,7 +197,7 @@ export default function MyReservations() {
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            {reservation.date} {reservation.time}
+                            {reservation.eventDate} {reservation.eventTime}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -252,14 +245,14 @@ export default function MyReservations() {
             <div className="text-center">
               <h4 className="font-bold text-lg mb-2">{selectedQR.eventName}</h4>
               <p className="text-sm text-gray-600 mb-6">
-                {selectedQR.date} {selectedQR.time}
+                {selectedQR.eventDate} {selectedQR.eventTime}
               </p>
 
               {/* QR 코드 (API 사용) */}
               <div className="bg-white p-4 rounded-2xl border-2 border-gray-200 mb-4">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                    selectedQR.qrCode
+                    selectedQR.qrCode || selectedQR.id
                   )}`}
                   alt="QR Code"
                   className="w-full h-auto"
@@ -267,7 +260,7 @@ export default function MyReservations() {
               </div>
 
               <p className="text-sm text-gray-600 mb-2">예약 번호</p>
-              <p className="text-lg font-mono font-bold text-gray-900 mb-6">{selectedQR.qrCode}</p>
+              <p className="text-lg font-mono font-bold text-gray-900 mb-6">{selectedQR.qrCode || selectedQR.id}</p>
 
               <p className="text-xs text-gray-500">입장 시 이 QR 코드를 스캔해주세요</p>
             </div>

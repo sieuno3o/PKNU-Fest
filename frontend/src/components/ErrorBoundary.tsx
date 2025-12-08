@@ -1,4 +1,4 @@
-import { Component, ReactNode } from 'react'
+import { Component, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 
 interface Props {
@@ -47,7 +47,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
             </p>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <div className="mb-6 p-4 bg-red-50 rounded-xl text-left">
                 <p className="text-xs font-mono text-red-800 break-all">
                   {this.state.error.toString()}

@@ -1,95 +1,57 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Filter, Calendar, MapPin, Clock, Users, GraduationCap } from 'lucide-react'
-
-// TODO: 나중에 API에서 가져올 데이터
-const mockEvents = [
-  {
-    id: '1',
-    title: '아이유 콘서트',
-    category: '공연',
-    date: '2025-05-13',
-    time: '19:00',
-    location: '대운동장',
-    capacity: 5000,
-    reserved: 3500,
-    isStudentOnly: false,
-    thumbnail: null,
-    status: 'PUBLISHED',
-    color: 'from-pink-500 to-purple-600',
-  },
-  {
-    id: '2',
-    title: '체험 부스 - AR/VR',
-    category: '체험',
-    date: '2025-05-13',
-    time: '10:00',
-    location: '학생회관 1층',
-    capacity: 50,
-    reserved: 25,
-    isStudentOnly: true,
-    thumbnail: null,
-    status: 'PUBLISHED',
-    color: 'from-orange-500 to-red-600',
-  },
-  {
-    id: '3',
-    title: '게임 대회',
-    category: '게임',
-    date: '2025-05-14',
-    time: '14:00',
-    location: '대강당',
-    capacity: 200,
-    reserved: 180,
-    isStudentOnly: false,
-    thumbnail: null,
-    status: 'PUBLISHED',
-    color: 'from-blue-500 to-cyan-600',
-  },
-  {
-    id: '4',
-    title: '프리마켓',
-    category: '기타',
-    date: '2025-05-14',
-    time: '11:00',
-    location: '잔디광장',
-    capacity: null,
-    reserved: 0,
-    isStudentOnly: false,
-    thumbnail: null,
-    status: 'PUBLISHED',
-    color: 'from-green-500 to-emerald-600',
-  },
-  {
-    id: '5',
-    title: '학생 토크콘서트',
-    category: '토크',
-    date: '2025-05-15',
-    time: '16:00',
-    location: '소극장',
-    capacity: 150,
-    reserved: 45,
-    isStudentOnly: true,
-    thumbnail: null,
-    status: 'PUBLISHED',
-    color: 'from-indigo-500 to-purple-600',
-  },
-]
+import { Search, Filter, Calendar, MapPin, Clock, Users, GraduationCap, Loader2, AlertCircle } from 'lucide-react'
+import { useEvents } from '@/hooks/useEvents'
 
 const categories = ['전체', '공연', '체험', '게임', '토크', '기타']
+
+// 카테고리별 색상 매핑
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    '공연': 'from-pink-500 to-purple-600',
+    '체험': 'from-orange-500 to-red-600',
+    '게임': 'from-blue-500 to-cyan-600',
+    '토크': 'from-indigo-500 to-purple-600',
+    '기타': 'from-green-500 to-emerald-600',
+  }
+  return colors[category] || 'from-gray-500 to-gray-600'
+}
+
+// 카테고리별 이모지 매핑
+const getCategoryEmoji = (category: string) => {
+  const emojis: Record<string, string> = {
+    '공연': '🎵',
+    '체험': '🎨',
+    '게임': '🎮',
+    '토크': '💬',
+    '기타': '🎪',
+  }
+  return emojis[category] || '🎪'
+}
 
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('전체')
   const [showStudentOnly, setShowStudentOnly] = useState(false)
 
-  // 필터링된 이벤트
-  const filteredEvents = mockEvents.filter((event) => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === '전체' || event.category === selectedCategory
-    const matchesStudentFilter = !showStudentOnly || event.isStudentOnly
-    return matchesSearch && matchesCategory && matchesStudentFilter
+  // API에서 이벤트 데이터 가져오기
+  const { data: events, isLoading, error } = useEvents({
+    category: selectedCategory !== '전체' ? selectedCategory : undefined,
+    search: searchQuery || undefined,
+    requiresStudentVerification: showStudentOnly || undefined,
   })
+
+  // 필터링된 이벤트 (클라이언트 사이드 추가 필터링)
+  const filteredEvents = useMemo(() => {
+    if (!events) return []
+
+    return events.filter((event) => {
+      const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesCategory = selectedCategory === '전체' || event.category === selectedCategory
+      const matchesStudentFilter = !showStudentOnly || event.requiresStudentVerification
+      return matchesSearch && matchesCategory && matchesStudentFilter
+    })
+  }, [events, searchQuery, selectedCategory, showStudentOnly])
 
   return (
     <div className="pb-4">
@@ -166,90 +128,121 @@ export default function Events() {
         </p>
       </div>
 
-      {/* 행사 카드 리스트 */}
-      <div className="px-4 py-4 space-y-4">
-        {filteredEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">검색 결과가 없습니다</p>
+      {/* 로딩 상태 */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        </div>
+      )}
+
+      {/* 에러 상태 */}
+      {error && (
+        <div className="mx-4 my-6 bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-900 mb-1">데이터를 불러올 수 없습니다</h3>
+              <p className="text-sm text-red-800">
+                {error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'}
+              </p>
+            </div>
           </div>
-        ) : (
-          filteredEvents.map((event) => (
-            <Link
-              key={event.id}
-              to={`/events/${event.id}`}
-              className="block bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
-            >
-              {/* 썸네일 */}
-              <div className={`relative h-40 bg-gradient-to-br ${event.color} flex items-center justify-center`}>
-                {event.isStudentOnly && (
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1">
-                    <GraduationCap className="w-4 h-4 text-blue-600" />
-                    <span className="text-xs font-semibold text-blue-600">학생 전용</span>
-                  </div>
-                )}
-                <div className="text-white text-6xl">
-                  {event.category === '공연' ? '🎵' :
-                   event.category === '체험' ? '🎨' :
-                   event.category === '게임' ? '🎮' :
-                   event.category === '토크' ? '💬' : '🎪'}
-                </div>
-              </div>
+        </div>
+      )}
 
-              {/* 카드 내용 */}
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="inline-block px-2 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded mb-2">
-                      {event.category}
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
-                  </div>
-                </div>
+      {/* 행사 카드 리스트 */}
+      {!isLoading && !error && (
+        <div className="px-4 py-4 space-y-4">
+          {filteredEvents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">검색 결과가 없습니다</p>
+            </div>
+          ) : (
+            filteredEvents.map((event) => {
+              const reservationPercentage = event.capacity
+                ? (event.currentReservations / event.capacity) * 100
+                : 0
 
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>{event.date}</span>
-                    <Clock className="w-4 h-4 ml-2" />
-                    <span>{event.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    <span>{event.location}</span>
-                  </div>
-                </div>
-
-                {/* 예약 현황 */}
-                {event.capacity && (
-                  <div>
-                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" />
-                        <span>예약 현황</span>
+              return (
+                <Link
+                  key={event.id}
+                  to={`/events/${event.id}`}
+                  className="block bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
+                >
+                  {/* 썸네일 */}
+                  <div className={`relative h-40 bg-gradient-to-br ${getCategoryColor(event.category)} flex items-center justify-center`}>
+                    {event.requiresStudentVerification && (
+                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1">
+                        <GraduationCap className="w-4 h-4 text-blue-600" />
+                        <span className="text-xs font-semibold text-blue-600">학생 전용</span>
                       </div>
-                      <span className="font-semibold">
-                        {event.reserved}/{event.capacity}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          (event.reserved / event.capacity) * 100 > 80
-                            ? 'bg-red-500'
-                            : (event.reserved / event.capacity) * 100 > 50
-                            ? 'bg-yellow-500'
-                            : 'bg-green-500'
-                        }`}
-                        style={{ width: `${(event.reserved / event.capacity) * 100}%` }}
-                      />
-                    </div>
+                    )}
+                    {event.image ? (
+                      <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-white text-6xl">
+                        {getCategoryEmoji(event.category)}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </Link>
-          ))
-        )}
-      </div>
+
+                  {/* 카드 내용 */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="inline-block px-2 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded mb-2">
+                          {event.category}
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">{event.title}</h3>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="w-4 h-4" />
+                        <span>{event.date}</span>
+                        <Clock className="w-4 h-4 ml-2" />
+                        <span>{event.startTime}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="w-4 h-4" />
+                        <span>{event.location}</span>
+                      </div>
+                    </div>
+
+                    {/* 예약 현황 */}
+                    {event.capacity && (
+                      <div>
+                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3.5 h-3.5" />
+                            <span>예약 현황</span>
+                          </div>
+                          <span className="font-semibold">
+                            {event.currentReservations}/{event.capacity}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              reservationPercentage > 80
+                                ? 'bg-red-500'
+                                : reservationPercentage > 50
+                                ? 'bg-yellow-500'
+                                : 'bg-green-500'
+                            }`}
+                            style={{ width: `${reservationPercentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              )
+            })
+          )}
+        </div>
+      )}
     </div>
   )
 }

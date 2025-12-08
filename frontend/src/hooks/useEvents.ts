@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { eventsApi, EventFilters, CreateEventRequest, UpdateEventRequest } from '@/lib/api/events'
+import { eventsApi, type EventFilters, type CreateEventRequest, type UpdateEventRequest } from '@/lib/api/events'
 import { toast } from '@/components/ui/Toast'
 
 // 행사 목록 조회

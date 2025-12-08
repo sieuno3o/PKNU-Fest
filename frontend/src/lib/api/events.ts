@@ -2,6 +2,9 @@ import api from './client'
 
 // 타입 정의
 export interface Event {
+  time: any
+  latitude: any
+  longitude: any
   id: string
   title: string
   description: string
@@ -35,7 +38,7 @@ export interface CreateEventRequest {
   requiresStudentVerification?: boolean
 }
 
-export interface UpdateEventRequest extends Partial<CreateEventRequest> {}
+export interface UpdateEventRequest extends Partial<CreateEventRequest> { }
 
 export interface EventFilters {
   category?: string
@@ -50,7 +53,7 @@ export const eventsApi = {
   // 행사 목록 조회
   getAll: async (filters?: EventFilters): Promise<Event[]> => {
     const response = await api.get<Event[]>('/events', { params: filters })
-    return response.data
+    return Array.isArray(response.data) ? response.data : (response.data as any).data || []
   },
 
   // 행사 상세 조회
@@ -67,7 +70,7 @@ export const eventsApi = {
 
   // 행사 수정 (관리자)
   update: async (id: string, data: UpdateEventRequest): Promise<Event> => {
-    const response = await api.patch<Event>(`/events/${id}`, data)
+    const response = await api.put<Event>(`/events/${id}`, data)
     return response.data
   },
 

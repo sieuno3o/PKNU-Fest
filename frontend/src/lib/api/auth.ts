@@ -78,12 +78,12 @@ export const authApi = {
   requestStudentVerification: async (
     data: RequestStudentVerificationRequest
   ): Promise<void> => {
-    await api.post('/auth/student-verification/request', data)
+    await api.post('/auth/verify-student', data)
   },
 
   // 학생 인증 확인 (이메일 토큰)
   verifyStudent: async (data: VerifyStudentRequest): Promise<User> => {
-    const response = await api.post<ApiResponse<User>>('/auth/student-verification/verify', data)
+    const response = await api.post<ApiResponse<User>>('/auth/confirm-student', data)
     return response.data.data
   },
 
@@ -99,7 +99,7 @@ export const authApi = {
 
   // 프로필 업데이트
   updateProfile: async (data: UpdateProfileRequest): Promise<User> => {
-    const response = await api.patch<ApiResponse<User>>('/auth/profile', data)
+    const response = await api.put<ApiResponse<User>>('/auth/me', data)
     return response.data.data
   },
 

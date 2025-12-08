@@ -1,5 +1,5 @@
 import api from './client'
-import { Reservation } from '@/stores/reservationStore'
+import type { Reservation } from '@/stores/reservationStore'
 
 // 타입 정의
 export interface CreateReservationRequest {
@@ -24,8 +24,10 @@ export interface ReservationFilters {
 export const reservationsApi = {
   // 내 예약 목록 조회
   getMy: async (): Promise<Reservation[]> => {
-    const response = await api.get<Reservation[]>('/reservations/my')
-    return response.data
+    const response = await api.get<Reservation[]>('/reservations')
+    // 백엔드가 배열을 직접 반환하는지, ApiResponse로 래핑하는지 확인
+    // response.data가 배열이면 그대로, 아니면 response.data.data 사용
+    return Array.isArray(response.data) ? response.data : (response.data as any).data || []
   },
 
   // 예약 상세 조회
@@ -48,13 +50,13 @@ export const reservationsApi = {
 
   // 예약 취소
   cancel: async (id: string): Promise<Reservation> => {
-    const response = await api.post<Reservation>(`/reservations/${id}/cancel`)
+    const response = await api.delete<Reservation>(`/reservations/${id}`)
     return response.data
   },
 
   // 예약 체크인 (관리자/QR 스캔)
   checkIn: async (id: string): Promise<Reservation> => {
-    const response = await api.post<Reservation>(`/reservations/${id}/check-in`)
+    const response = await api.post<Reservation>(`/reservations/${id}/checkin`)
     return response.data
   },
 

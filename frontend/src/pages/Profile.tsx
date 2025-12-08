@@ -39,7 +39,7 @@ export default function Profile() {
 
   // 역할 전환 (테스트용)
   const handleRoleSwitch = (role: UserRole) => {
-    switchRole(role)
+    switchRole()
     alert(`${role === 'admin' ? '관리자' : role === 'vendor' ? '업체' : '사용자'} 모드로 전환되었습니다.`)
     window.location.reload() // 페이지 새로고침으로 UI 업데이트
   }
@@ -185,7 +185,7 @@ export default function Profile() {
               <button
                 onClick={() => {
                   setIsEditing(false)
-                  setEditForm({ name: user.name, phone: user.phone })
+                  setEditForm({ name: user.name, phone: user.phone || '' })
                 }}
                 className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition flex items-center justify-center gap-1"
               >
@@ -195,6 +195,45 @@ export default function Profile() {
             </div>
           )}
         </div>
+
+        {/* 학생 인증 섹션 */}
+        {!user.isVerified && (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl shadow-sm p-6 mb-6 border border-blue-100">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <School className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">부경대학교 학생 인증</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  학생 전용 행사 예약을 위해 부경대학교 학생 인증이 필요합니다.
+                </p>
+                <button
+                  onClick={() => navigate('/student-verification')}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
+                >
+                  학생 인증하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {user.isVerified && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-sm p-6 mb-6 border border-green-100">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Check className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">학생 인증 완료</h3>
+                <p className="text-sm text-gray-600">
+                  부경대학교 학생으로 인증되었습니다. 학생 전용 혜택을 이용하실 수 있습니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 설정 메뉴 */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
@@ -230,31 +269,28 @@ export default function Profile() {
           <div className="flex gap-2">
             <button
               onClick={() => handleRoleSwitch('user')}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${
-                user.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${user.role === 'user'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               일반 사용자
             </button>
             <button
               onClick={() => handleRoleSwitch('admin')}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${
-                user.role === 'admin'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${user.role === 'admin'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               관리자
             </button>
             <button
               onClick={() => handleRoleSwitch('vendor')}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${
-                user.role === 'vendor'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${user.role === 'vendor'
+                ? 'bg-orange-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               업체
             </button>

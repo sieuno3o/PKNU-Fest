@@ -3,13 +3,19 @@ import { create } from 'zustand'
 export interface Reservation {
   id: string
   userId: string
+  userName?: string
+  userEmail?: string
+  userPhone?: string
   eventId: string
   eventName: string
   eventDate: string
   eventTime: string
+  eventLocation?: string
   location: string
+  reservationDate?: string
   attendees: number
   status: 'confirmed' | 'cancelled' | 'checked-in' | 'no-show'
+  studentVerified?: boolean
   qrCode?: string
   createdAt: string
 }

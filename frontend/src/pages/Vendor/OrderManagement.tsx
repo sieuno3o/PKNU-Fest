@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   ShoppingBag,
   Clock,
@@ -10,134 +10,81 @@ import {
   DollarSign,
   Filter,
   Bell,
+  Loader2,
 } from 'lucide-react'
-
-interface OrderItem {
-  menuId: string
-  menuName: string
-  quantity: number
-  price: number
-}
-
-interface Order {
-  id: string
-  orderNumber: number
-  userId: string
-  userName: string
-  userPhone: string
-  items: OrderItem[]
-  totalAmount: number
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled'
-  orderTime: string
-  pickupTime?: string
-  notes?: string
-}
-
-// TODO: 실제로는 API에서 가져올 데이터
-const mockOrders: Order[] = [
-  {
-    id: 'order-1',
-    orderNumber: 1,
-    userId: 'user-1',
-    userName: '김철수',
-    userPhone: '010-1234-5678',
-    items: [
-      { menuId: 'menu-1', menuName: '치즈 떡볶이', quantity: 2, price: 5000 },
-      { menuId: 'menu-3', menuName: '콜라', quantity: 2, price: 2000 },
-    ],
-    totalAmount: 14000,
-    status: 'pending',
-    orderTime: new Date().toISOString(),
-    notes: '덜 맵게 해주세요',
-  },
-  {
-    id: 'order-2',
-    orderNumber: 2,
-    userId: 'user-2',
-    userName: '이영희',
-    userPhone: '010-2345-6789',
-    items: [
-      { menuId: 'menu-2', menuName: '핫도그', quantity: 1, price: 3000 },
-      { menuId: 'menu-3', menuName: '콜라', quantity: 1, price: 2000 },
-    ],
-    totalAmount: 5000,
-    status: 'preparing',
-    orderTime: new Date(Date.now() - 5 * 60000).toISOString(),
-  },
-  {
-    id: 'order-3',
-    orderNumber: 3,
-    userId: 'user-3',
-    userName: '박민수',
-    userPhone: '010-3456-7890',
-    items: [{ menuId: 'menu-4', menuName: '타코야키', quantity: 3, price: 4000 }],
-    totalAmount: 12000,
-    status: 'ready',
-    orderTime: new Date(Date.now() - 10 * 60000).toISOString(),
-  },
-  {
-    id: 'order-4',
-    orderNumber: 4,
-    userId: 'user-4',
-    userName: '정수진',
-    userPhone: '010-4567-8901',
-    items: [
-      { menuId: 'menu-1', menuName: '치즈 떡볶이', quantity: 1, price: 5000 },
-      { menuId: 'menu-2', menuName: '핫도그', quantity: 1, price: 3000 },
-    ],
-    totalAmount: 8000,
-    status: 'completed',
-    orderTime: new Date(Date.now() - 30 * 60000).toISOString(),
-    pickupTime: new Date(Date.now() - 20 * 60000).toISOString(),
-  },
-]
+import { useVendorOrders, useUpdateOrderStatus } from '@/hooks/useOrders'
+import { useFoodTrucks } from '@/hooks/useFoodTrucks'
+import { useAuth } from '@/hooks/useAuth'
+import type { Order } from '@/lib/api/orders'
+import React from 'react'
 
 export default function OrderManagement() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders)
+  const { user } = useAuth()
   const [selectedStatus, setSelectedStatus] = useState<
     'all' | 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled'
   >('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
 
-  // 필터링
-  const filteredOrders = orders.filter((order) => {
-    if (selectedStatus === 'all') return true
-    return order.status === selectedStatus
+  // Get vendor's food truck
+  const { data: foodTrucks, isLoading: loadingTrucks } = useFoodTrucks()
+  const vendorTruck = useMemo(
+    () => foodTrucks?.find((truck) => truck.ownerId === user?.id),
+    [foodTrucks, user?.id]
+  )
+
+  // Fetch orders for the vendor's truck
+  const {
+    data: orders = [],
+    isLoading: loadingOrders,
+    error: ordersError,
+  } = useVendorOrders(vendorTruck?.id || '', {
+    status: selectedStatus === 'all' ? undefined : selectedStatus,
   })
 
-  // 상태별 정렬 (pending -> preparing -> ready -> completed -> cancelled)
-  const sortedOrders = [...filteredOrders].sort((a, b) => {
+  // Update order status mutation
+  const updateOrderStatus = useUpdateOrderStatus()
+
+  const isLoading = loadingTrucks || loadingOrders
+
+  // 필터링 및 정렬
+  const sortedOrders = useMemo(() => {
     const statusOrder = { pending: 1, preparing: 2, ready: 3, completed: 4, cancelled: 5 }
-    return statusOrder[a.status] - statusOrder[b.status]
-  })
+    return [...orders].sort((a, b) => statusOrder[a.status] - statusOrder[b.status])
+  }, [orders])
 
   // 통계
-  const stats = {
-    pending: orders.filter((o) => o.status === 'pending').length,
-    preparing: orders.filter((o) => o.status === 'preparing').length,
-    ready: orders.filter((o) => o.status === 'ready').length,
-    todayTotal: orders.filter((o) => o.status === 'completed').reduce((sum, o) => sum + o.totalAmount, 0),
-  }
+  const stats = useMemo(() => {
+    return {
+      pending: orders.filter((o) => o.status === 'pending').length,
+      preparing: orders.filter((o) => o.status === 'preparing').length,
+      ready: orders.filter((o) => o.status === 'ready').length,
+      todayTotal: orders
+        .filter((o) => o.status === 'completed')
+        .reduce((sum, o) => sum + o.totalAmount, 0),
+    }
+  }, [orders])
 
   // 주문 상태 변경
-  const handleStatusChange = (orderId: string, newStatus: Order['status']) => {
-    setOrders(
-      orders.map((order) => {
-        if (order.id === orderId) {
-          const updatedOrder = { ...order, status: newStatus }
-          if (newStatus === 'completed') {
-            updatedOrder.pickupTime = new Date().toISOString()
-          }
-          return updatedOrder
-        }
-        return order
-      })
-    )
+  const handleStatusChange = async (
+    orderId: string,
+    newStatus: 'preparing' | 'ready' | 'completed' | 'cancelled'
+  ) => {
+    if (!vendorTruck) return
 
-    // 알림 진동
-    if ('vibrate' in navigator) {
-      navigator.vibrate(100)
+    try {
+      await updateOrderStatus.mutateAsync({
+        truckId: vendorTruck.id,
+        orderId,
+        data: { status: newStatus },
+      })
+
+      // 알림 진동
+      if ('vibrate' in navigator) {
+        navigator.vibrate(100)
+      }
+    } catch (error) {
+      console.error('Failed to update order status:', error)
     }
   }
 
@@ -191,6 +138,44 @@ export default function OrderManagement() {
     },
   }
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-gray-50 pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 mx-auto mb-4 text-green-600 animate-spin" />
+          <p className="text-gray-600">주문 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (ordersError) {
+    return (
+      <div className="min-h-full bg-gray-50 pb-20 flex items-center justify-center">
+        <div className="text-center px-4">
+          <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">오류가 발생했습니다</h2>
+          <p className="text-gray-600">주문 정보를 불러올 수 없습니다.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // No food truck found
+  if (!vendorTruck) {
+    return (
+      <div className="min-h-full bg-gray-50 pb-20 flex items-center justify-center">
+        <div className="text-center px-4">
+          <Package className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">푸드트럭 정보 없음</h2>
+          <p className="text-gray-600">등록된 푸드트럭이 없습니다.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-full bg-gray-50 pb-20">
       {/* 헤더 */}
@@ -242,11 +227,10 @@ export default function OrderManagement() {
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap ${
-                selectedStatus === status
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap ${selectedStatus === status
                   ? 'bg-green-600 text-white shadow-lg'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+                }`}
             >
               {status === 'all' ? '전체' : statusConfig[status].label}
             </button>
@@ -283,9 +267,8 @@ export default function OrderManagement() {
                       </div>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 ${
-                        statusConfig[order.status].color
-                      } bg-white`}
+                      className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 ${statusConfig[order.status].color
+                        } bg-white`}
                     >
                       <StatusIcon className="w-4 h-4" />
                       {statusConfig[order.status].label}
@@ -399,9 +382,8 @@ export default function OrderManagement() {
                   {selectedOrder.orderNumber}
                 </div>
                 <span
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${
-                    statusConfig[selectedOrder.status].color
-                  }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${statusConfig[selectedOrder.status].color
+                    }`}
                 >
                   {React.createElement(statusConfig[selectedOrder.status].icon, {
                     className: 'w-4 h-4',

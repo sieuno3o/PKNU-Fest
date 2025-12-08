@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowLeft } from 'lucide-react'
+import { authApi } from '@/lib/api/auth'
+import { toast } from '@/components/ui/Toast'
 
 export default function Register() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -19,15 +22,34 @@ export default function Register() {
 
     // 비밀번호 확인
     if (formData.password !== formData.confirmPassword) {
-      alert('비밀번호가 일치하지 않습니다.')
+      toast.error('비밀번호가 일치하지 않습니다.')
       return
     }
 
-    // TODO: API 연동
-    console.log('Register:', formData)
+    // 비밀번호 유효성 검사
+    if (formData.password.length < 8) {
+      toast.error('비밀번호는 최소 8자 이상이어야 합니다.')
+      return
+    }
 
-    // 회원가입 후 학생 인증 페이지로 이동
-    navigate('/student-verification')
+    try {
+      setIsLoading(true)
+
+      // API 호출
+      const { email, password, name, phone } = formData
+      await authApi.register({ email, password, name, phone })
+
+      toast.success('회원가입이 완료되었습니다!')
+
+      // 회원가입 후 로그인 페이지로 이동
+      navigate('/login')
+    } catch (error: any) {
+      console.error('Register error:', error)
+      const errorMessage = error?.response?.data?.message || '회원가입에 실패했습니다.'
+      toast.error(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -171,9 +193,17 @@ export default function Register() {
             {/* 회원가입 버튼 */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-6"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              회원가입
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  처리 중...
+                </>
+              ) : (
+                '회원가입'
+              )}
             </button>
           </form>
 

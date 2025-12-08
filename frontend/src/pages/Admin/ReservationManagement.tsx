@@ -10,95 +10,15 @@ import {
   AlertCircle,
   Download,
   Mail,
+  Loader2,
+  X,
 } from 'lucide-react'
-
-interface Reservation {
-  id: string
-  userId: string
-  userName: string
-  userEmail: string
-  userPhone: string
-  eventId: string
-  eventName: string
-  eventDate: string
-  eventTime: string
-  eventLocation: string
-  reservationDate: string
-  status: 'confirmed' | 'cancelled' | 'checked-in' | 'no-show'
-  attendees: number
-  studentVerified: boolean
-}
-
-// TODO: 실제로는 API에서 가져올 데이터
-const mockReservations: Reservation[] = [
-  {
-    id: 'res-101',
-    userId: 'user-1',
-    userName: '김철수',
-    userEmail: 'kimcs@example.com',
-    userPhone: '010-1234-5678',
-    eventId: '1',
-    eventName: '아이유 콘서트',
-    eventDate: '2024-12-15',
-    eventTime: '19:00',
-    eventLocation: '대운동장',
-    reservationDate: '2024-12-10T10:30:00',
-    status: 'confirmed',
-    attendees: 2,
-    studentVerified: true,
-  },
-  {
-    id: 'res-102',
-    userId: 'user-2',
-    userName: '이영희',
-    userEmail: 'leeyh@example.com',
-    userPhone: '010-2345-6789',
-    eventId: '2',
-    eventName: '체험 부스 - AR/VR',
-    eventDate: '2024-12-16',
-    eventTime: '14:00',
-    eventLocation: '공학관',
-    reservationDate: '2024-12-10T11:15:00',
-    status: 'confirmed',
-    attendees: 1,
-    studentVerified: true,
-  },
-  {
-    id: 'res-103',
-    userId: 'user-3',
-    userName: '박민수',
-    userEmail: 'parkms@example.com',
-    userPhone: '010-3456-7890',
-    eventId: '3',
-    eventName: '게임 대회',
-    eventDate: '2024-12-10',
-    eventTime: '14:00',
-    eventLocation: '학생회관',
-    reservationDate: '2024-12-08T15:20:00',
-    status: 'checked-in',
-    attendees: 1,
-    studentVerified: false,
-  },
-  {
-    id: 'res-104',
-    userId: 'user-4',
-    userName: '정수진',
-    userEmail: 'jungsj@example.com',
-    userPhone: '010-4567-8901',
-    eventId: '1',
-    eventName: '아이유 콘서트',
-    eventDate: '2024-12-15',
-    eventTime: '19:00',
-    eventLocation: '대운동장',
-    reservationDate: '2024-12-09T09:00:00',
-    status: 'cancelled',
-    attendees: 1,
-    studentVerified: true,
-  },
-]
+import { useAllReservations, useCheckInReservation, useUpdateReservation } from '@/hooks/useReservations'
+import type { Reservation } from '@/stores/reservationStore'
+import { toast } from '@/components/ui/Toast'
 
 export default function ReservationManagement() {
-  const [reservations, setReservations] = useState<Reservation[]>(mockReservations)
+  const { data: reservations = [], isLoading, error } = useAllReservations()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<
     'all' | 'confirmed' | 'cancelled' | 'checked-in' | 'no-show'
@@ -109,9 +29,9 @@ export default function ReservationManagement() {
   // 필터링
   const filteredReservations = reservations.filter((reservation) => {
     const matchesSearch =
-      reservation.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reservation.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reservation.eventName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reservation.userEmail.toLowerCase().includes(searchQuery.toLowerCase())
+      reservation.userEmail?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = selectedStatus === 'all' || reservation.status === selectedStatus
     return matchesSearch && matchesStatus
   })
@@ -124,12 +44,11 @@ export default function ReservationManagement() {
     cancelled: reservations.filter((r) => r.status === 'cancelled').length,
   }
 
+  const updateReservation = useUpdateReservation()
+
   // 예약 상태 변경
   const handleStatusChange = (id: string, newStatus: Reservation['status']) => {
-    setReservations(
-      reservations.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-    )
-    alert('상태가 변경되었습니다.')
+    updateReservation.mutate({ id, data: { status: newStatus } })
   }
 
   // 예약 상세보기
@@ -223,11 +142,10 @@ export default function ReservationManagement() {
               <button
                 key={status}
                 onClick={() => setSelectedStatus(status)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition whitespace-nowrap ${
-                  selectedStatus === status
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition whitespace-nowrap ${selectedStatus === status
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 {status === 'all'
                   ? '전체'
@@ -267,9 +185,8 @@ export default function ReservationManagement() {
                     <p className="text-sm text-gray-600">{reservation.eventName}</p>
                   </div>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
-                      statusConfig[reservation.status].color
-                    }`}
+                    className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${statusConfig[reservation.status].color
+                      }`}
                   >
                     <StatusIcon className="w-3 h-3" />
                     {statusConfig[reservation.status].label}
@@ -289,7 +206,7 @@ export default function ReservationManagement() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    <span>예약: {new Date(reservation.reservationDate).toLocaleString()}</span>
+                    <span>예약: {reservation.reservationDate ? new Date(reservation.reservationDate).toLocaleString() : '-'}</span>
                   </div>
                 </div>
 
@@ -401,15 +318,14 @@ export default function ReservationManagement() {
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">예약일시</span>
                     <span className="text-sm font-medium">
-                      {new Date(selectedReservation.reservationDate).toLocaleString()}
+                      {selectedReservation.reservationDate ? new Date(selectedReservation.reservationDate).toLocaleString() : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">상태</span>
                     <span
-                      className={`text-sm font-bold px-2 py-1 rounded-full ${
-                        statusConfig[selectedReservation.status].color
-                      }`}
+                      className={`text-sm font-bold px-2 py-1 rounded-full ${statusConfig[selectedReservation.status].color
+                        }`}
                     >
                       {statusConfig[selectedReservation.status].label}
                     </span>

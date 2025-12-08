@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   foodTrucksApi,
   menuApi,
-  FoodTruckFilters,
-  CreateMenuRequest,
-  UpdateMenuRequest,
+  type FoodTruckFilters,
+  type CreateMenuRequest,
+  type UpdateMenuRequest,
 } from '@/lib/api/foodtrucks'
 import { toast } from '@/components/ui/Toast'
 

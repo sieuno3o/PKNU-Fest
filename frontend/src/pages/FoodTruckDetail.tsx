@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { Menu } from '@/lib/api/foodtrucks'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, MapPin, Clock, Star, Phone, X, ShoppingCart } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
@@ -55,12 +56,12 @@ const mockFoodTruck = {
 export default function FoodTruckDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [selectedMenu, setSelectedMenu] = useState<typeof mockFoodTruck.menu[0] | null>(null)
+  const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
 
   // 메뉴 선택 모달
-  const handleMenuClick = (menu: typeof mockFoodTruck.menu[0]) => {
-    setSelectedMenu(menu)
+  const handleMenuClick = (menuItem: Menu) => {
+    setSelectedMenu(menuItem)
   }
 
   // 장바구니에 담기
@@ -164,9 +165,8 @@ export default function FoodTruckDetail() {
           {mockFoodTruck.menu.map((menu) => (
             <div
               key={menu.id}
-              className={`flex gap-4 p-4 bg-gray-50 rounded-2xl ${
-                !menu.isAvailable && 'opacity-50'
-              }`}
+              className={`flex gap-4 p-4 bg-gray-50 rounded-2xl ${!menu.isAvailable && 'opacity-50'
+                }`}
             >
               <img
                 src={menu.image}
@@ -182,7 +182,7 @@ export default function FoodTruckDetail() {
                   </span>
                   {menu.isAvailable ? (
                     <button
-                      onClick={() => handleMenuClick(menu)}
+                      onClick={() => handleMenuClick(menu as unknown as Menu)}
                       className="px-4 py-2 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 transition"
                     >
                       선택

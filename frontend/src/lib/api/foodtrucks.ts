@@ -8,6 +8,8 @@ export interface FoodTruck {
   category: string
   image: string
   location: string
+  latitude?: number
+  longitude?: number
   operatingHours: string
   phone: string
   rating: number
@@ -40,7 +42,7 @@ export interface CreateMenuRequest {
   stock?: number
 }
 
-export interface UpdateMenuRequest extends Partial<CreateMenuRequest> {}
+export interface UpdateMenuRequest extends Partial<CreateMenuRequest> { }
 
 export interface FoodTruckFilters {
   category?: string
@@ -52,25 +54,25 @@ export interface FoodTruckFilters {
 export const foodTrucksApi = {
   // 푸드트럭 목록 조회
   getAll: async (filters?: FoodTruckFilters): Promise<FoodTruck[]> => {
-    const response = await api.get<FoodTruck[]>('/food-trucks', { params: filters })
-    return response.data
+    const response = await api.get<FoodTruck[]>('/foodtrucks', { params: filters })
+    return Array.isArray(response.data) ? response.data : (response.data as any).data || []
   },
 
   // 푸드트럭 상세 조회
   getById: async (id: string): Promise<FoodTruck> => {
-    const response = await api.get<FoodTruck>(`/food-trucks/${id}`)
+    const response = await api.get<FoodTruck>(`/foodtrucks/${id}`)
     return response.data
   },
 
   // 푸드트럭 메뉴 조회
   getMenu: async (truckId: string): Promise<Menu[]> => {
-    const response = await api.get<Menu[]>(`/food-trucks/${truckId}/menu`)
+    const response = await api.get<Menu[]>(`/foodtrucks/${truckId}/menu`)
     return response.data
   },
 
   // 메뉴 아이템 상세 조회
   getMenuItem: async (truckId: string, menuId: string): Promise<Menu> => {
-    const response = await api.get<Menu>(`/food-trucks/${truckId}/menu/${menuId}`)
+    const response = await api.get<Menu>(`/foodtrucks/${truckId}/menu/${menuId}`)
     return response.data
   },
 }
