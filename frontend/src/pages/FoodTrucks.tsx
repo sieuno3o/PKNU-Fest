@@ -57,11 +57,10 @@ export default function FoodTrucks() {
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition ${
-                selectedCategory === category
+              className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition ${selectedCategory === category
                   ? 'bg-orange-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+                }`}
             >
               {category}
             </button>
@@ -110,7 +109,7 @@ export default function FoodTrucks() {
                   {/* 이미지 */}
                   <div className="relative flex-shrink-0">
                     <img
-                      src={truck.image}
+                      src={truck.image || truck.imageUrl || 'https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?w=400'}
                       alt={truck.name}
                       className="w-24 h-24 object-cover rounded-xl"
                     />

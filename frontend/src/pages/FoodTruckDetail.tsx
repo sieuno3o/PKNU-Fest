@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Menu } from '@/lib/api/foodtrucks'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, Star, Phone, X, ShoppingCart } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, X, ShoppingCart } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 import { useFoodTruck } from '@/hooks/useFoodTrucks'
 

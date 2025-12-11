@@ -12,14 +12,14 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { client } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/client'
 
 export default function AdminDashboard() {
   // 실제 API에서 통계 데이터 가져오기
   const { data: statsData } = useQuery({
     queryKey: ['admin', 'statistics'],
     queryFn: async () => {
-      const response = await client.get('/admin/statistics')
+      const response = await apiClient.get('/admin/statistics')
       return response.data
     },
   })

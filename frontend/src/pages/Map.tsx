@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { MapPin, UtensilsCrossed, Calendar, Navigation, Loader2, AlertCircle } from 'lucide-react'
+import { UtensilsCrossed, Calendar, Navigation } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
 import { useFoodTrucks } from '@/hooks/useFoodTrucks'
 
@@ -15,8 +14,8 @@ export default function Map() {
   const [scriptLoaded, setScriptLoaded] = useState(false)
 
   // API 호출
-  const { data: events = [], isLoading: eventsLoading, error: eventsError } = useEvents()
-  const { data: foodTrucks = [], isLoading: foodTrucksLoading, error: foodTrucksError } = useFoodTrucks()
+  const { data: events = [], isLoading: eventsLoading } = useEvents()
+  const { data: foodTrucks = [], isLoading: foodTrucksLoading } = useFoodTrucks()
 
   // Kakao Maps 스크립트 로드
   useEffect(() => {
@@ -83,7 +82,7 @@ export default function Map() {
               <span style="font-weight: bold; font-size: 14px; color: #1e40af;">${event.category}</span>
             </div>
             <div style="font-weight: 600; font-size: 15px; color: #111; margin-bottom: 4px;">${event.title}</div>
-            <div style="font-size: 12px; color: #666;">⏰ ${event.time}</div>
+            <div style="font-size: 12px; color: #666;">⏰ ${event.startTime}</div>
             <a href="/events/${event.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: linear-gradient(to right, #2563eb, #9333ea); color: white; text-decoration: none; border-radius: 8px; font-size: 12px; font-weight: 600;">상세보기</a>
           </div>
         `
@@ -135,7 +134,7 @@ export default function Map() {
           <div style="padding: 10px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 150px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
               <span style="font-size: 20px;">🍔</span>
-              <span style="font-weight: bold; font-size: 14px; color: #ea580c;">${truck.category || '푸드트럭'}</span>
+              <span style="font-weight: bold; font-size: 14px; color: #ea580c;">푸드트럭</span>
             </div>
             <div style="font-weight: 600; font-size: 15px; color: #111; margin-bottom: 4px;">${truck.name}</div>
             <a href="/foodtrucks/${truck.id}" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: linear-gradient(to right, #ea580c, #dc2626); color: white; text-decoration: none; border-radius: 8px; font-size: 12px; font-weight: 600;">메뉴보기</a>

@@ -101,10 +101,10 @@ async function main() {
       location: '대학 본관 앞',
       latitude: 35.1335,
       longitude: 129.1025,
-      thumbnail: 'https://via.placeholder.com/400x300?text=Treasure+Hunt',
+      thumbnail: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&h=300&fit=crop',
       images: [
-        'https://via.placeholder.com/800x600?text=Treasure+1',
-        'https://via.placeholder.com/800x600?text=Treasure+2',
+        'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=600&fit=crop',
       ],
       isStudentOnly: true,
       capacity: 50,
@@ -121,9 +121,9 @@ async function main() {
       location: '학생 식당 앞 광장',
       latitude: 35.1340,
       longitude: 129.1030,
-      thumbnail: 'https://via.placeholder.com/400x300?text=Tteokbokki+Challenge',
+      thumbnail: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop',
       images: [
-        'https://via.placeholder.com/800x600?text=Challenge+1',
+        'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=600&fit=crop',
       ],
       isStudentOnly: true,
       capacity: 20,
@@ -140,7 +140,7 @@ async function main() {
       location: '문화관 2층',
       latitude: 35.1345,
       longitude: 129.1020,
-      thumbnail: 'https://via.placeholder.com/400x300?text=Calligraphy',
+      thumbnail: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=300&fit=crop',
       images: [],
       isStudentOnly: false,
       capacity: null,
@@ -157,11 +157,11 @@ async function main() {
       location: '야외 공연장',
       latitude: 35.1350,
       longitude: 129.1015,
-      thumbnail: 'https://via.placeholder.com/400x300?text=Band+Performance',
+      thumbnail: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop',
       images: [
-        'https://via.placeholder.com/800x600?text=Band+1',
-        'https://via.placeholder.com/800x600?text=Band+2',
-        'https://via.placeholder.com/800x600?text=Band+3',
+        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&h=600&fit=crop',
       ],
       isStudentOnly: false,
       capacity: null,
@@ -262,7 +262,7 @@ async function main() {
       latitude: 35.1338,
       longitude: 129.1022,
       ownerId: vendor1.id,
-      imageUrl: 'https://via.placeholder.com/400x300?text=Taco+Truck',
+      imageUrl: 'https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?w=400&h=300&fit=crop',
     },
   });
 
@@ -274,7 +274,7 @@ async function main() {
       latitude: 35.1342,
       longitude: 129.1028,
       ownerId: vendor2.id,
-      imageUrl: 'https://via.placeholder.com/400x300?text=Chicken+Truck',
+      imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400&h=300&fit=crop',
     },
   });
 
@@ -292,7 +292,7 @@ async function main() {
         name: '비프 타코',
         description: '육즙 가득한 소고기 타코',
         price: 5000,
-        imageUrl: 'https://via.placeholder.com/300x200?text=Beef+Taco',
+        imageUrl: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=300&h=200&fit=crop',
         available: true,
       },
       {
@@ -300,7 +300,7 @@ async function main() {
         name: '치킨 타코',
         description: '부드러운 닭고기 타코',
         price: 4500,
-        imageUrl: 'https://via.placeholder.com/300x200?text=Chicken+Taco',
+        imageUrl: 'https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=300&h=200&fit=crop',
         available: true,
       },
       {
@@ -308,7 +308,7 @@ async function main() {
         name: '나초',
         description: '치즈 듬뿍 나초',
         price: 6000,
-        imageUrl: 'https://via.placeholder.com/300x200?text=Nachos',
+        imageUrl: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=300&h=200&fit=crop',
         available: true,
       },
       {
@@ -316,7 +316,7 @@ async function main() {
         name: '후라이드 치킨',
         description: '바삭한 후라이드 치킨',
         price: 18000,
-        imageUrl: 'https://via.placeholder.com/300x200?text=Fried+Chicken',
+        imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300&h=200&fit=crop',
         available: true,
       },
       {
@@ -324,7 +324,7 @@ async function main() {
         name: '양념 치킨',
         description: '달콤 매콤한 양념 치킨',
         price: 19000,
-        imageUrl: 'https://via.placeholder.com/300x200?text=Spicy+Chicken',
+        imageUrl: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=300&h=200&fit=crop',
         available: true,
       },
       {
@@ -332,7 +332,7 @@ async function main() {
         name: '감자튀김',
         description: '바삭한 감자튀김',
         price: 3000,
-        imageUrl: 'https://via.placeholder.com/300x200?text=French+Fries',
+        imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=300&h=200&fit=crop',
         available: true,
       },
     ],

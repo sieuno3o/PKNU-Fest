@@ -23,7 +23,7 @@ export default function StudentVerification() {
     }
 
     sendCodeMutation.mutate(
-      { studentEmail },
+      { email: studentEmail, studentId: '', name: '' },
       {
         onSuccess: () => {
           setStep('code')
@@ -36,7 +36,7 @@ export default function StudentVerification() {
     e.preventDefault()
 
     verifyCodeMutation.mutate(
-      { code: verificationCode },
+      { token: verificationCode },
       {
         onSuccess: () => {
           toast.success('학생 인증이 완료되었습니다!')

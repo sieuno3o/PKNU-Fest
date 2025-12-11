@@ -15,6 +15,8 @@ export default function Register() {
     confirmPassword: '',
     name: '',
     phone: '',
+    studentId: '',
+    department: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,8 +38,8 @@ export default function Register() {
       setIsLoading(true)
 
       // API 호출
-      const { email, password, name, phone } = formData
-      await authApi.register({ email, password, name, phone })
+      const { email, password, name, phone, studentId, department } = formData
+      await authApi.register({ email, password, name, phone, studentId, department })
 
       toast.success('회원가입이 완료되었습니다!')
 

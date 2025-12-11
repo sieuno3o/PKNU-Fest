@@ -1,20 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  User,
-  Mail,
-  Phone,
-  School,
-  Lock,
-  LogOut,
-  ChevronRight,
-  Edit2,
-  Check,
-  X,
-  RefreshCw,
-} from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useAuth, useUpdateProfile, useChangePassword, type UserRole } from '../hooks/useAuth'
 import { toast } from '@/components/ui/Toast'
+import ProfileHeader from '@/components/profile/ProfileHeader'
+import ProfileCard from '@/components/profile/ProfileCard'
+import StudentVerificationBanner from '@/components/profile/StudentVerificationBanner'
+import SettingsMenu from '@/components/profile/SettingsMenu'
+import RoleSwitcher from '@/components/profile/RoleSwitcher'
+import ChangePasswordModal from '@/components/profile/ChangePasswordModal'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -53,7 +47,7 @@ export default function Profile() {
   const handleRoleSwitch = (role: UserRole) => {
     switchRole()
     alert(`${role === 'admin' ? '관리자' : role === 'vendor' ? '업체' : '사용자'} 모드로 전환되었습니다.`)
-    window.location.reload() // 페이지 새로고침으로 UI 업데이트
+    window.location.reload()
   }
 
   // 비밀번호 변경
@@ -102,235 +96,32 @@ export default function Profile() {
 
   return (
     <div className="min-h-full bg-gray-50 pb-20">
-      {/* 헤더 */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 pb-12">
-        <h1 className="text-2xl font-bold mb-2">프로필</h1>
-        <p className="text-blue-100">내 정보를 확인하고 관리하세요</p>
-      </div>
+      <ProfileHeader />
 
       <div className="px-4 -mt-6">
-        {/* 프로필 카드 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <User className="w-10 h-10 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{user.name}</h2>
-                <p className="text-sm text-gray-600">{user.department}</p>
-                {user.isVerified && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <Check className="w-4 h-4 text-green-600" />
-                    <span className="text-xs text-green-600 font-medium">학생 인증 완료</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="p-2 hover:bg-gray-100 rounded-full transition"
-              >
-                <Edit2 className="w-5 h-5 text-gray-600" />
-              </button>
-            )}
-          </div>
+        <ProfileCard
+          user={user}
+          isEditing={isEditing}
+          editForm={editForm}
+          isPending={updateProfileMutation.isPending}
+          onEditStart={() => setIsEditing(true)}
+          onEditCancel={() => {
+            setIsEditing(false)
+            setEditForm({ name: user.name, phone: user.phone || '' })
+          }}
+          onEditSave={handleSaveProfile}
+          onFormChange={(field, value) => setEditForm({ ...editForm, [field]: value })}
+        />
 
-          {/* 기본 정보 */}
-          <div className="space-y-4">
-            {/* 이름 */}
-            <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-              <User className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 mb-1">이름</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                ) : (
-                  <p className="text-gray-900 font-medium">{user.name}</p>
-                )}
-              </div>
-            </div>
+        <StudentVerificationBanner isVerified={user.isVerified || false} />
 
-            {/* 이메일 */}
-            <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-              <Mail className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 mb-1">이메일</p>
-                <p className="text-gray-900 font-medium">{user.email}</p>
-              </div>
-            </div>
+        <SettingsMenu onPasswordChangeClick={() => setShowPasswordModal(true)} />
 
-            {/* 전화번호 */}
-            <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-              <Phone className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 mb-1">전화번호</p>
-                {isEditing ? (
-                  <input
-                    type="tel"
-                    value={editForm.phone}
-                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                ) : (
-                  <p className="text-gray-900 font-medium">{user.phone}</p>
-                )}
-              </div>
-            </div>
-
-            {/* 학번 */}
-            <div className="flex items-center gap-3">
-              <School className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 mb-1">학번</p>
-                <p className="text-gray-900 font-medium">{user.studentId}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 수정 버튼 */}
-          {isEditing && (
-            <div className="flex gap-2 mt-6">
-              <button
-                onClick={handleSaveProfile}
-                disabled={updateProfileMutation.isPending}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition flex items-center justify-center gap-1 disabled:opacity-50"
-              >
-                {updateProfileMutation.isPending ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    저장 중...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4" />
-                    저장
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditing(false)
-                  setEditForm({ name: user.name, phone: user.phone || '' })
-                }}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition flex items-center justify-center gap-1"
-              >
-                <X className="w-4 h-4" />
-                취소
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* 학생 인증 섹션 */}
-        {!user.isVerified && (
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl shadow-sm p-6 mb-6 border border-blue-100">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <School className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">부경대학교 학생 인증</h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  학생 전용 행사 예약을 위해 부경대학교 학생 인증이 필요합니다.
-                </p>
-                <button
-                  onClick={() => navigate('/student-verification')}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
-                >
-                  학생 인증하기
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {user.isVerified && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-sm p-6 mb-6 border border-green-100">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Check className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">학생 인증 완료</h3>
-                <p className="text-sm text-gray-600">
-                  부경대학교 학생으로 인증되었습니다. 학생 전용 혜택을 이용하실 수 있습니다.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 설정 메뉴 */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
-          <button
-            onClick={() => setShowPasswordModal(true)}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition border-b border-gray-100"
-          >
-            <div className="flex items-center gap-3">
-              <Lock className="w-5 h-5 text-gray-600" />
-              <span className="text-gray-900 font-medium">비밀번호 변경</span>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
-
-          <button
-            onClick={() => navigate('/my-reservations')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition"
-          >
-            <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-gray-600" />
-              <span className="text-gray-900 font-medium">내 예약</span>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
-        </div>
-
-        {/* 역할 전환 (테스트용) */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
-          <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-gray-600" />
-            역할 전환 (테스트)
-          </h3>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleRoleSwitch('user')}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${user.role === 'user'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              일반 사용자
-            </button>
-            <button
-              onClick={() => handleRoleSwitch('admin')}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${user.role === 'admin'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              관리자
-            </button>
-            <button
-              onClick={() => handleRoleSwitch('vendor')}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${user.role === 'vendor'
-                ? 'bg-orange-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              업체
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            현재: <span className="font-medium">{user.name}</span> ({user.role === 'admin' ? '관리자' : user.role === 'vendor' ? '업체' : '일반 사용자'})
-          </p>
-        </div>
+        <RoleSwitcher
+          currentRole={user.role}
+          userName={user.name}
+          onRoleSwitch={handleRoleSwitch}
+        />
 
         {/* 로그아웃 버튼 */}
         <button
@@ -342,84 +133,14 @@ export default function Profile() {
         </button>
       </div>
 
-      {/* 비밀번호 변경 모달 */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">비밀번호 변경</h3>
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  현재 비밀번호
-                </label>
-                <input
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="현재 비밀번호 입력"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  새 비밀번호
-                </label>
-                <input
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, newPassword: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="8자 이상 입력"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  새 비밀번호 확인
-                </label>
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="새 비밀번호 다시 입력"
-                />
-              </div>
-
-              <button
-                onClick={handleChangePassword}
-                disabled={changePasswordMutation.isPending}
-                className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition mt-6 disabled:opacity-50"
-              >
-                {changePasswordMutation.isPending ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    변경 중...
-                  </div>
-                ) : (
-                  '변경하기'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        isPending={changePasswordMutation.isPending}
+        formData={passwordForm}
+        onClose={() => setShowPasswordModal(false)}
+        onSubmit={handleChangePassword}
+        onFormChange={(field, value) => setPasswordForm({ ...passwordForm, [field]: value })}
+      />
     </div>
   )
 }

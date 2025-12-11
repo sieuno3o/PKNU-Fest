@@ -1,0 +1,39 @@
+import { Clock, Package, CheckCircle } from 'lucide-react'
+
+type OrderStatus = 'all' | 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+
+interface OrderFiltersProps {
+  selectedStatus: OrderStatus
+  onStatusChange: (status: OrderStatus) => void
+}
+
+const statusConfig: Record<string, { label: string; icon: any }> = {
+  pending: { label: '대기중', icon: Clock },
+  preparing: { label: '조리중', icon: Package },
+  ready: { label: '완료', icon: CheckCircle },
+  completed: { label: '픽업완료', icon: CheckCircle },
+}
+
+export default function OrderFilters({ selectedStatus, onStatusChange }: OrderFiltersProps) {
+  const statuses: OrderStatus[] = ['all', 'pending', 'preparing', 'ready', 'completed']
+
+  return (
+    <div className="px-4 pb-4">
+      <div className="flex gap-2 overflow-x-auto">
+        {statuses.map((status) => (
+          <button
+            key={status}
+            onClick={() => onStatusChange(status)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap ${
+              selectedStatus === status
+                ? 'bg-green-600 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            {status === 'all' ? '전체' : statusConfig[status].label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}

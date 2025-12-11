@@ -5,41 +5,46 @@ export interface FoodTruck {
   id: string
   name: string
   description: string
-  category: string
-  image: string
   location: string
   latitude?: number
   longitude?: number
-  operatingHours: string
-  phone: string
-  rating: number
-  reviewCount: number
-  isOpen: boolean
   ownerId: string
+  imageUrl?: string
+  image?: string
+  category?: string
+  isOpen?: boolean
+  rating?: number
+  reviewCount?: number
+  operatingHours?: string
   createdAt: string
   updatedAt: string
+  owner?: {
+    id: string
+    name: string
+    email: string
+    phone?: string
+  }
+  menu?: Menu[]
 }
 
 export interface Menu {
   id: string
-  truckId: string
+  foodTruckId: string
   name: string
   description: string
   price: number
-  image: string
-  category: string
-  isAvailable: boolean
-  stock?: number
+  imageUrl?: string
+  available: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface CreateMenuRequest {
   name: string
   description: string
   price: number
-  image?: string
-  category: string
-  isAvailable?: boolean
-  stock?: number
+  imageUrl?: string
+  available?: boolean
 }
 
 export interface UpdateMenuRequest extends Partial<CreateMenuRequest> { }
