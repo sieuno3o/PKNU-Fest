@@ -3,6 +3,7 @@ import { BcryptUtil } from '../utils/bcrypt.util'
 import { JwtUtil, JwtPayload } from '../utils/jwt.util'
 import { BadRequestError, UnauthorizedError, ConflictError, NotFoundError } from '../utils/error.util'
 import { RegisterInput, LoginInput } from '../utils/validation.schemas'
+import { sendStudentVerificationEmail } from '../utils/email.util'
 
 export class AuthService {
   async register(data: RegisterInput) {
@@ -144,6 +145,16 @@ export class AuthService {
   private verificationCodes: Map<string, { code: string; studentEmail: string; expiresAt: Date }> = new Map()
 
   async sendStudentVerification(userId: string, studentEmail: string) {
+    // Get user info for email
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    })
+
+    if (!user) {
+      throw new NotFoundError('User not found')
+    }
+
     // Check if student email is already verified by another user
     const existingUser = await prisma.user.findUnique({
       where: { studentEmail },
@@ -160,9 +171,15 @@ export class AuthService {
     // Store verification code
     this.verificationCodes.set(userId, { code, studentEmail, expiresAt })
 
-    // TODO: Send email with verification code
-    // For now, we'll just log it (in production, integrate with email service)
-    console.log(`Verification code for ${studentEmail}: ${code}`)
+    // Send email with verification code
+    try {
+      await sendStudentVerificationEmail(studentEmail, user.name, code)
+      console.log(`✅ Verification code sent to ${studentEmail}: ${code}`)
+    } catch (error) {
+      console.error('❌ Failed to send verification email:', error)
+      // Still log the code for development
+      console.log(`📧 Verification code for ${studentEmail}: ${code}`)
+    }
 
     return {
       message: 'Verification code sent to your student email',

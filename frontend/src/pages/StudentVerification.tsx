@@ -1,39 +1,49 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, CheckCircle, ArrowLeft } from 'lucide-react'
+import { useRequestStudentVerification, useVerifyStudent } from '@/hooks/useAuth'
+import { toast } from '@/components/ui/Toast'
 
 export default function StudentVerification() {
   const navigate = useNavigate()
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [studentEmail, setStudentEmail] = useState('')
   const [verificationCode, setVerificationCode] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+
+  const sendCodeMutation = useRequestStudentVerification()
+  const verifyCodeMutation = useVerifyStudent()
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    // TODO: API 연동 - 인증 코드 발송
-    console.log('Send verification code to:', studentEmail)
+    // 이메일 형식 검증
+    if (!studentEmail.endsWith('@pukyong.ac.kr')) {
+      toast.error('@pukyong.ac.kr 이메일만 사용 가능합니다')
+      return
+    }
 
-    setTimeout(() => {
-      setIsLoading(false)
-      setStep('code')
-    }, 1000)
+    sendCodeMutation.mutate(
+      { studentEmail },
+      {
+        onSuccess: () => {
+          setStep('code')
+        },
+      }
+    )
   }
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    // TODO: API 연동 - 인증 코드 확인
-    console.log('Verify code:', verificationCode)
-
-    setTimeout(() => {
-      setIsLoading(false)
-      // 인증 완료 후 홈으로 이동
-      navigate('/')
-    }, 1000)
+    verifyCodeMutation.mutate(
+      { code: verificationCode },
+      {
+        onSuccess: () => {
+          toast.success('학생 인증이 완료되었습니다!')
+          navigate('/')
+        },
+      }
+    )
   }
 
   return (
@@ -101,10 +111,10 @@ export default function StudentVerification() {
                 {/* 인증 코드 발송 버튼 */}
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={sendCodeMutation.isPending}
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? '전송 중...' : '인증 코드 받기'}
+                  {sendCodeMutation.isPending ? '전송 중...' : '인증 코드 받기'}
                 </button>
               </form>
             </div>
@@ -149,10 +159,10 @@ export default function StudentVerification() {
                 {/* 인증하기 버튼 */}
                 <button
                   type="submit"
-                  disabled={isLoading || verificationCode.length !== 6}
+                  disabled={verifyCodeMutation.isPending || verificationCode.length !== 6}
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? '인증 중...' : '인증하기'}
+                  {verifyCodeMutation.isPending ? '인증 중...' : '인증하기'}
                 </button>
               </form>
             </div>

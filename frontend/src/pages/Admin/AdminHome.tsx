@@ -10,17 +10,27 @@ import {
   XCircle,
   BarChart3,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { client } from '@/lib/api/client'
 
 export default function AdminHome() {
-  // TODO: 실제로는 API에서 가져올 통계 데이터
+  // 실제 API에서 통계 데이터 가져오기
+  const { data: statsData } = useQuery({
+    queryKey: ['admin', 'statistics'],
+    queryFn: async () => {
+      const response = await client.get('/admin/statistics')
+      return response.data
+    },
+  })
+
   const stats = {
-    totalEvents: 24,
-    activeEvents: 8,
-    totalReservations: 1256,
-    todayReservations: 89,
-    totalUsers: 3421,
-    newUsersToday: 47,
-    checkInRate: 78,
+    totalEvents: statsData?.totalEvents || 0,
+    activeEvents: statsData?.activeEvents || 0,
+    totalReservations: statsData?.totalReservations || 0,
+    todayReservations: statsData?.todayReservations || 0,
+    totalUsers: statsData?.totalUsers || 0,
+    newUsersToday: statsData?.newUsersToday || 0,
+    checkInRate: statsData?.checkInRate || 0,
   }
 
   const recentReservations = [

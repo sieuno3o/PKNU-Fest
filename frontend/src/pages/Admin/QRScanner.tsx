@@ -11,28 +11,25 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react'
+import { useCheckInReservation, useReservation } from '@/hooks/useReservations'
+import { toast } from '@/components/ui/Toast'
 
 interface ScanResult {
   success: boolean
   message: string
-  reservation?: {
-    id: string
-    userName: string
-    eventName: string
-    eventDate: string
-    eventTime: string
-    location: string
-    attendees: number
-    status: string
-  }
+  reservation?: any
 }
 
 export default function QRScanner() {
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [manualCode, setManualCode] = useState('')
+  const [scannedReservationId, setScannedReservationId] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
+
+  const checkInMutation = useCheckInReservation()
+  const { data: reservationData } = useReservation(scannedReservationId || '')
 
   // 카메라 시작
   const startCamera = async () => {
@@ -60,32 +57,39 @@ export default function QRScanner() {
     setScanning(false)
   }
 
-  // QR 코드 스캔 (실제로는 QR 코드 라이브러리 사용 필요)
+  // QR 코드 스캔 (실제 API 호출)
   const handleScan = (code: string) => {
-    // TODO: 실제로는 API 호출
-    // 예시: QR 코드가 예약 ID를 담고 있다고 가정
-    const mockResult: ScanResult = {
-      success: true,
-      message: '체크인이 완료되었습니다.',
-      reservation: {
-        id: code,
-        userName: '김철수',
-        eventName: '아이유 콘서트',
-        eventDate: '2024-12-15',
-        eventTime: '19:00',
-        location: '대운동장',
-        attendees: 2,
-        status: 'checked-in',
+    // QR 코드가 예약 ID를 담고 있다고 가정
+    const reservationId = code
+
+    checkInMutation.mutate(reservationId, {
+      onSuccess: (data) => {
+        setScanResult({
+          success: true,
+          message: '체크인이 완료되었습니다.',
+          reservation: data,
+        })
+        setScannedReservationId(reservationId)
+        stopCamera()
+
+        // 성공 피드백
+        if ('vibrate' in navigator) {
+          navigator.vibrate(200)
+        }
       },
-    }
+      onError: (error: any) => {
+        setScanResult({
+          success: false,
+          message: error.response?.data?.message || '체크인에 실패했습니다.',
+        })
+        stopCamera()
 
-    setScanResult(mockResult)
-    stopCamera()
-
-    // 성공 피드백
-    if ('vibrate' in navigator) {
-      navigator.vibrate(200)
-    }
+        // 에러 피드백
+        if ('vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100])
+        }
+      },
+    })
   }
 
   // 수동 입력 처리

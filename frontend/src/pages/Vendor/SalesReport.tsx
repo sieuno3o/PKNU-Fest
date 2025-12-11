@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   TrendingUp,
   DollarSign,
@@ -11,94 +11,73 @@ import {
   Award,
   Clock,
 } from 'lucide-react'
-
-interface SalesData {
-  date: string
-  revenue: number
-  orders: number
-  avgOrderValue: number
-}
-
-interface MenuSales {
-  menuId: string
-  menuName: string
-  category: string
-  quantity: number
-  revenue: number
-}
-
-// TODO: 실제로는 API에서 가져올 데이터
-const mockSalesData: SalesData[] = [
-  { date: '2024-12-06', revenue: 450000, orders: 87, avgOrderValue: 5172 },
-  { date: '2024-12-05', revenue: 520000, orders: 95, avgOrderValue: 5474 },
-  { date: '2024-12-04', revenue: 380000, orders: 72, avgOrderValue: 5278 },
-  { date: '2024-12-03', revenue: 490000, orders: 89, avgOrderValue: 5506 },
-  { date: '2024-12-02', revenue: 410000, orders: 78, avgOrderValue: 5256 },
-]
-
-const mockMenuSales: MenuSales[] = [
-  {
-    menuId: 'menu-1',
-    menuName: '치즈 떡볶이',
-    category: '메인',
-    quantity: 156,
-    revenue: 780000,
-  },
-  {
-    menuId: 'menu-2',
-    menuName: '핫도그',
-    category: '메인',
-    quantity: 132,
-    revenue: 396000,
-  },
-  {
-    menuId: 'menu-3',
-    menuName: '콜라',
-    category: '음료',
-    quantity: 245,
-    revenue: 490000,
-  },
-  {
-    menuId: 'menu-4',
-    menuName: '타코야키',
-    category: '사이드',
-    quantity: 98,
-    revenue: 392000,
-  },
-]
-
-const mockHourlySales = [
-  { hour: '10:00', orders: 5, revenue: 25000 },
-  { hour: '11:00', orders: 12, revenue: 60000 },
-  { hour: '12:00', orders: 28, revenue: 140000 },
-  { hour: '13:00', orders: 35, revenue: 175000 },
-  { hour: '14:00', orders: 22, revenue: 110000 },
-  { hour: '15:00', orders: 18, revenue: 90000 },
-  { hour: '16:00', orders: 15, revenue: 75000 },
-  { hour: '17:00', orders: 25, revenue: 125000 },
-  { hour: '18:00', orders: 32, revenue: 160000 },
-  { hour: '19:00', orders: 28, revenue: 140000 },
-]
+import { useAuth } from '@/hooks/useAuth'
+import { useOrderStats, useMenuSales, useDailySales } from '@/hooks/useOrders'
+import { toast } from '@/components/ui/Toast'
 
 export default function SalesReport() {
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today')
+  const { user } = useAuth()
 
-  // 오늘 매출 통계
-  const todayStats = {
-    revenue: 450000,
-    orders: 87,
-    avgOrderValue: 5172,
-    topMenu: '치즈 떡볶이',
-    peakHour: '13:00',
+  // 푸드트럭 ID 가져오기 (VENDOR 역할 사용자의 경우)
+  const truckId = user?.foodTruckId || user?.id
+
+  // 날짜 계산
+  const today = new Date().toISOString().split('T')[0]
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+  // 실제 API에서 데이터 가져오기
+  const { data: todayData } = useDailySales(truckId!, today)
+  const { data: statsData } = useOrderStats(truckId!, weekAgo, today)
+  const { data: menuSalesData } = useMenuSales(truckId!, weekAgo, today)
+
+  // 로딩 상태
+  if (!truckId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">푸드트럭 정보를 찾을 수 없습니다.</p>
+      </div>
+    )
   }
 
-  // 주간 비교
-  const weeklyComparison = {
-    revenue: 2250000,
-    revenueChange: 12.5,
-    orders: 421,
-    ordersChange: 8.3,
-  }
+  // 데이터 가공
+  const todayStats = useMemo(() => ({
+    revenue: todayData?.totalRevenue || 0,
+    orders: todayData?.totalOrders || 0,
+    avgOrderValue: todayData?.avgOrderValue || 0,
+    topMenu: menuSalesData?.[0]?.menuName || '-',
+    peakHour: '13:00', // TODO: 시간대별 데이터 추가 필요
+  }), [todayData, menuSalesData])
+
+  const weeklyComparison = useMemo(() => ({
+    revenue: statsData?.totalRevenue || 0,
+    revenueChange: 12.5, // TODO: 전주 대비 계산 필요
+    orders: statsData?.totalOrders || 0,
+    ordersChange: 8.3, // TODO: 전주 대비 계산 필요
+  }), [statsData])
+
+  // Mock 시간대별 데이터 (TODO: API 추가 필요)
+  const mockHourlySales = [
+    { hour: '10:00', orders: 5, revenue: 25000 },
+    { hour: '11:00', orders: 12, revenue: 60000 },
+    { hour: '12:00', orders: 28, revenue: 140000 },
+    { hour: '13:00', orders: 35, revenue: 175000 },
+    { hour: '14:00', orders: 22, revenue: 110000 },
+    { hour: '15:00', orders: 18, revenue: 90000 },
+    { hour: '16:00', orders: 15, revenue: 75000 },
+    { hour: '17:00', orders: 25, revenue: 125000 },
+    { hour: '18:00', orders: 32, revenue: 160000 },
+    { hour: '19:00', orders: 28, revenue: 140000 },
+  ]
+
+  // Mock 일별 데이터 (TODO: API에서 가져오기)
+  const mockSalesData = [
+    { date: '2024-12-06', revenue: 450000, orders: 87, avgOrderValue: 5172 },
+    { date: '2024-12-05', revenue: 520000, orders: 95, avgOrderValue: 5474 },
+    { date: '2024-12-04', revenue: 380000, orders: 72, avgOrderValue: 5278 },
+    { date: '2024-12-03', revenue: 490000, orders: 89, avgOrderValue: 5506 },
+    { date: '2024-12-02', revenue: 410000, orders: 78, avgOrderValue: 5256 },
+  ]
 
   // 최대 매출 구하기 (차트용)
   const maxRevenue = Math.max(...mockHourlySales.map((h) => h.revenue))
@@ -231,8 +210,9 @@ export default function SalesReport() {
             <h3 className="font-bold text-lg text-gray-900">메뉴별 판매 순위</h3>
           </div>
 
-          <div className="space-y-3">
-            {mockMenuSales.map((menu, index) => (
+          {menuSalesData && menuSalesData.length > 0 ? (
+            <div className="space-y-3">
+              {menuSalesData.map((menu: any, index: number) => (
               <div
                 key={menu.menuId}
                 className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition"
@@ -254,17 +234,20 @@ export default function SalesReport() {
                   <div className="flex items-center justify-between mb-1">
                     <h4 className="font-bold text-gray-900">{menu.menuName}</h4>
                     <span className="text-sm font-bold text-green-600">
-                      {(menu.revenue / 10000).toFixed(0)}만원
+                      {((menu.totalRevenue || 0) / 10000).toFixed(0)}만원
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">{menu.category}</span>
-                    <span className="text-xs text-gray-600">{menu.quantity}개 판매</span>
+                    <span className="text-xs text-gray-600">메뉴</span>
+                    <span className="text-xs text-gray-600">{menu.totalQuantity || 0}개 판매</span>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500 py-8">판매 데이터가 없습니다.</p>
+          )}
         </div>
       </div>
 

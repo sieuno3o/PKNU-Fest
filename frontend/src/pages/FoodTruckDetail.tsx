@@ -3,61 +3,45 @@ import type { Menu } from '@/lib/api/foodtrucks'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, MapPin, Clock, Star, Phone, X, ShoppingCart } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
-
-// TODO: 나중에 API에서 가져올 데이터
-const mockFoodTruck = {
-  id: '1',
-  name: '타코야끼 트럭',
-  description: '일본 정통 타코야끼와 오코노미야키를 판매합니다. 신선한 재료로 매일 아침 직접 만든 반죽을 사용합니다.',
-  category: '일식',
-  image: 'https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=800',
-  location: '대운동장 앞',
-  operatingHours: '10:00 - 22:00',
-  rating: 4.8,
-  reviewCount: 127,
-  phone: '010-1234-5678',
-  isOpen: true,
-  menu: [
-    {
-      id: 'm1',
-      name: '타코야끼 (6개)',
-      description: '문어가 들어간 일본식 타코야끼',
-      price: 5000,
-      image: 'https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=400',
-      isAvailable: true,
-    },
-    {
-      id: 'm2',
-      name: '타코야끼 (10개)',
-      description: '문어가 들어간 일본식 타코야끼',
-      price: 8000,
-      image: 'https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=400',
-      isAvailable: true,
-    },
-    {
-      id: 'm3',
-      name: '오코노미야키',
-      description: '야채와 해산물이 듬뿍 들어간 일본식 팬케이크',
-      price: 7000,
-      image: 'https://images.unsplash.com/photo-1618128782653-23f52ac91459?w=400',
-      isAvailable: true,
-    },
-    {
-      id: 'm4',
-      name: '치즈 타코야끼 (6개)',
-      description: '치즈가 듬뿍 들어간 타코야끼',
-      price: 6000,
-      image: 'https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=400',
-      isAvailable: false,
-    },
-  ],
-}
+import { useFoodTruck } from '@/hooks/useFoodTrucks'
 
 export default function FoodTruckDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
+
+  // 실제 API에서 푸드트럭 데이터 가져오기
+  const { data: foodTruck, isLoading, error } = useFoodTruck(id!)
+
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 에러 상태
+  if (error || !foodTruck) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">푸드트럭 정보를 불러올 수 없습니다.</p>
+          <button
+            onClick={() => navigate('/foodtrucks')}
+            className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+          >
+            목록으로 돌아가기
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   // 메뉴 선택 모달
   const handleMenuClick = (menuItem: Menu) => {
@@ -66,26 +50,26 @@ export default function FoodTruckDetail() {
 
   // 장바구니에 담기
   const addToCart = () => {
-    if (!selectedMenu) return
+    if (!selectedMenu || !foodTruck) return
 
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
     const existingItem = cart.find(
       (item: any) =>
-        item.truckId === mockFoodTruck.id && item.menuId === selectedMenu.id
+        item.truckId === foodTruck.id && item.menuId === selectedMenu.id
     )
 
     if (existingItem) {
       existingItem.quantity += 1
     } else {
       cart.push({
-        id: `${mockFoodTruck.id}-${selectedMenu.id}-${Date.now()}`,
-        truckId: mockFoodTruck.id,
-        truckName: mockFoodTruck.name,
+        id: `${foodTruck.id}-${selectedMenu.id}-${Date.now()}`,
+        truckId: foodTruck.id,
+        truckName: foodTruck.name,
         menuId: selectedMenu.id,
         menuName: selectedMenu.name,
         price: selectedMenu.price,
         quantity: 1,
-        image: selectedMenu.image,
+        image: selectedMenu.imageUrl,
       })
     }
 
@@ -109,8 +93,8 @@ export default function FoodTruckDetail() {
       {/* 헤더 이미지 */}
       <div className="relative">
         <img
-          src={mockFoodTruck.image}
-          alt={mockFoodTruck.name}
+          src={foodTruck.imageUrl || 'https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?w=800'}
+          alt={foodTruck.name}
           className="w-full h-64 object-cover"
         />
         <button
@@ -119,82 +103,73 @@ export default function FoodTruckDetail() {
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        {mockFoodTruck.isOpen && (
-          <div className="absolute top-4 right-4 px-3 py-1 bg-green-500 text-white text-sm font-bold rounded-full">
-            운영중
-          </div>
-        )}
+        <div className="absolute top-4 right-4 px-3 py-1 bg-green-500 text-white text-sm font-bold rounded-full">
+          운영중
+        </div>
       </div>
 
       {/* 푸드트럭 정보 */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{mockFoodTruck.name}</h1>
-            <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded-lg">
-              {mockFoodTruck.category}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 text-yellow-500">
-            <Star className="w-5 h-5 fill-current" />
-            <span className="text-lg font-bold">{mockFoodTruck.rating}</span>
-            <span className="text-sm text-gray-500">({mockFoodTruck.reviewCount})</span>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{foodTruck.name}</h1>
           </div>
         </div>
-        <p className="text-gray-600 mb-4">{mockFoodTruck.description}</p>
+        <p className="text-gray-600 mb-4">{foodTruck.description}</p>
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            <span>{mockFoodTruck.location}</span>
+            <span>{foodTruck.location}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            <span>{mockFoodTruck.operatingHours}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4" />
-            <span>{mockFoodTruck.phone}</span>
-          </div>
+          {foodTruck.owner?.phone && (
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              <span>{foodTruck.owner.phone}</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* 메뉴 */}
       <div className="p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">메뉴</h2>
-        <div className="space-y-4">
-          {mockFoodTruck.menu.map((menu) => (
-            <div
-              key={menu.id}
-              className={`flex gap-4 p-4 bg-gray-50 rounded-2xl ${!menu.isAvailable && 'opacity-50'
-                }`}
-            >
-              <img
-                src={menu.image}
-                alt={menu.name}
-                className="w-24 h-24 object-cover rounded-xl"
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-lg text-gray-900 mb-1">{menu.name}</h3>
-                <p className="text-sm text-gray-600 mb-2 line-clamp-2">{menu.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-orange-600">
-                    {menu.price.toLocaleString()}원
-                  </span>
-                  {menu.isAvailable ? (
-                    <button
-                      onClick={() => handleMenuClick(menu as unknown as Menu)}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 transition"
-                    >
-                      선택
-                    </button>
-                  ) : (
-                    <span className="text-sm text-gray-500 font-medium">품절</span>
-                  )}
+        {foodTruck.menu && foodTruck.menu.length > 0 ? (
+          <div className="space-y-4">
+            {foodTruck.menu.map((menu) => (
+              <div
+                key={menu.id}
+                className={`flex gap-4 p-4 bg-gray-50 rounded-2xl ${!menu.available && 'opacity-50'}`}
+              >
+                <img
+                  src={menu.imageUrl || 'https://images.unsplash.com/photo-1565123409695-7b5ef63a2efb?w=400'}
+                  alt={menu.name}
+                  className="w-24 h-24 object-cover rounded-xl"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg text-gray-900 mb-1">{menu.name}</h3>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{menu.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-orange-600">
+                      {menu.price.toLocaleString()}원
+                    </span>
+                    {menu.available ? (
+                      <button
+                        onClick={() => handleMenuClick(menu)}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 transition"
+                      >
+                        선택
+                      </button>
+                    ) : (
+                      <span className="text-sm text-gray-500 font-medium">품절</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-500 py-8">등록된 메뉴가 없습니다.</p>
+        )}
       </div>
 
       {/* 메뉴 선택 모달 (장바구니 담기 / 바로 결제하기) */}

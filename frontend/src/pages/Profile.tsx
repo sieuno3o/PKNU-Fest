@@ -13,11 +13,15 @@ import {
   X,
   RefreshCw,
 } from 'lucide-react'
-import { useAuth, type UserRole } from '../hooks/useAuth'
+import { useAuth, useUpdateProfile, useChangePassword, type UserRole } from '../hooks/useAuth'
+import { toast } from '@/components/ui/Toast'
 
 export default function Profile() {
   const navigate = useNavigate()
   const { user, switchRole, logout: authLogout } = useAuth()
+  const updateProfileMutation = useUpdateProfile()
+  const changePasswordMutation = useChangePassword()
+
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     name: user?.name || '',
@@ -32,9 +36,17 @@ export default function Profile() {
 
   // 프로필 수정
   const handleSaveProfile = () => {
-    // TODO: API 호출로 수정
-    setIsEditing(false)
-    alert('프로필이 수정되었습니다.')
+    updateProfileMutation.mutate(
+      {
+        name: editForm.name,
+        phone: editForm.phone,
+      },
+      {
+        onSuccess: () => {
+          setIsEditing(false)
+        },
+      }
+    )
   }
 
   // 역할 전환 (테스트용)
@@ -47,20 +59,30 @@ export default function Profile() {
   // 비밀번호 변경
   const handleChangePassword = () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('새 비밀번호가 일치하지 않습니다.')
+      toast.error('새 비밀번호가 일치하지 않습니다.')
       return
     }
     if (passwordForm.newPassword.length < 8) {
-      alert('비밀번호는 8자 이상이어야 합니다.')
+      toast.error('비밀번호는 8자 이상이어야 합니다.')
       return
     }
-    alert('비밀번호가 변경되었습니다.')
-    setShowPasswordModal(false)
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    })
+
+    changePasswordMutation.mutate(
+      {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      },
+      {
+        onSuccess: () => {
+          setShowPasswordModal(false)
+          setPasswordForm({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+          })
+        },
+      }
+    )
   }
 
   // 로그아웃
@@ -177,10 +199,20 @@ export default function Profile() {
             <div className="flex gap-2 mt-6">
               <button
                 onClick={handleSaveProfile}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition flex items-center justify-center gap-1"
+                disabled={updateProfileMutation.isPending}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition flex items-center justify-center gap-1 disabled:opacity-50"
               >
-                <Check className="w-4 h-4" />
-                저장
+                {updateProfileMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    저장 중...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    저장
+                  </>
+                )}
               </button>
               <button
                 onClick={() => {
@@ -372,9 +404,17 @@ export default function Profile() {
 
               <button
                 onClick={handleChangePassword}
-                className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition mt-6"
+                disabled={changePasswordMutation.isPending}
+                className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition mt-6 disabled:opacity-50"
               >
-                변경하기
+                {changePasswordMutation.isPending ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    변경 중...
+                  </div>
+                ) : (
+                  '변경하기'
+                )}
               </button>
             </div>
           </div>

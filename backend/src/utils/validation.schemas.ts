@@ -9,10 +9,13 @@ export const registerSchema = z.object({
 })
 
 export const sendStudentVerificationSchema = z.object({
-  studentEmail: z.string().email('Invalid email address').refine(
-    (email) => email.endsWith('@pknu.ac.kr'),
-    { message: 'Must be a PKNU email address (@pknu.ac.kr)' }
-  ),
+  pknu_student_email: z
+    .string()
+    .email()
+    .refine(
+      (email) => email.endsWith('@pknu.ac.kr') || email.endsWith('@office.pknu.ac.kr'),
+      { message: 'Must be a PKNU email address (@pknu.ac.kr or @office.pknu.ac.kr)' }
+    ),
 })
 
 export const confirmStudentVerificationSchema = z.object({

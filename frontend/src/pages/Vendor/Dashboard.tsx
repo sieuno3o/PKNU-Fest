@@ -11,17 +11,28 @@ import {
   ChevronRight,
   AlertCircle,
 } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { useDailySales, useVendorOrders } from '@/hooks/useOrders'
+import { useFoodTruckMenu } from '@/hooks/useFoodTrucks'
 
 export default function VendorDashboard() {
-  // TODO: 실제로는 API에서 가져올 통계 데이터
+  const { user } = useAuth()
+  const truckId = user?.foodTruckId || user?.id
+  const today = new Date().toISOString().split('T')[0]
+
+  // 실제 API에서 데이터 가져오기
+  const { data: todayData } = useDailySales(truckId!, today)
+  const { data: ordersData } = useVendorOrders(truckId!, { status: 'PENDING,PREPARING,READY' })
+  const { data: menuData } = useFoodTruckMenu(truckId!)
+
   const stats = {
-    todayOrders: 42,
-    todayRevenue: 450000,
-    pendingOrders: 3,
-    preparingOrders: 5,
-    readyOrders: 2,
-    menuItems: 12,
-    popularMenu: '치즈 떡볶이',
+    todayOrders: todayData?.totalOrders || 0,
+    todayRevenue: todayData?.totalRevenue || 0,
+    pendingOrders: ordersData?.filter((o: any) => o.status === 'PENDING').length || 0,
+    preparingOrders: ordersData?.filter((o: any) => o.status === 'PREPARING').length || 0,
+    readyOrders: ordersData?.filter((o: any) => o.status === 'READY').length || 0,
+    menuItems: menuData?.length || 0,
+    popularMenu: '-',
   }
 
   const quickLinks = [
