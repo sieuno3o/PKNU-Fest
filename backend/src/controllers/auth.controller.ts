@@ -68,15 +68,44 @@ export class AuthController {
     }
   }
 
+  async changePassword(req: ReqWithUser, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' })
+      }
+
+      const { currentPassword, newPassword } = req.body
+      const result = await authService.changePassword(req.user.userId, currentPassword, newPassword)
+      return ResponseUtil.success(res, result, 'Password changed successfully')
+    } catch (error) {
+      next(error)
+    }
+  }
+
   async sendStudentVerification(req: ReqWithUser, res: Response, next: NextFunction) {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized' })
       }
 
-      const { studentEmail } = req.body
-      const result = await authService.sendStudentVerification(req.user.userId, studentEmail)
+      const { pknu_student_email } = req.body
+      const result = await authService.sendStudentVerification(req.user.userId, pknu_student_email)
       return ResponseUtil.success(res, result, 'Verification code sent')
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  // 코드만 검증 (다음 단계 전 확인)
+  async verifyCodeOnly(req: ReqWithUser, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' })
+      }
+
+      const { code } = req.body
+      const result = await authService.verifyCodeOnly(req.user.userId, code)
+      return ResponseUtil.success(res, result, 'Code verified')
     } catch (error) {
       next(error)
     }
@@ -88,9 +117,51 @@ export class AuthController {
         return res.status(401).json({ message: 'Unauthorized' })
       }
 
-      const { code } = req.body
-      const result = await authService.confirmStudentVerification(req.user.userId, code)
+      const { code, studentId, department, grade } = req.body
+      const result = await authService.confirmStudentVerification(
+        req.user.userId,
+        code,
+        studentId,
+        department,
+        grade
+      )
       return ResponseUtil.success(res, result, 'Student verification confirmed')
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  // Password Reset Methods
+  async requestPasswordReset(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body
+      const result = await authService.requestPasswordReset(email)
+      return ResponseUtil.success(res, result, 'Password reset requested')
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token, newPassword } = req.body
+      const result = await authService.resetPassword(token, newPassword)
+      return ResponseUtil.success(res, result, 'Password reset successful')
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  // Delete Account
+  async deleteAccount(req: ReqWithUser, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' })
+      }
+
+      const { password } = req.body
+      const result = await authService.deleteAccount(req.user.userId, password)
+      return ResponseUtil.success(res, result, 'Account deleted successfully')
     } catch (error) {
       next(error)
     }

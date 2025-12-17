@@ -29,6 +29,8 @@ import StudentVerification from './pages/StudentVerification'
 import Profile from './pages/Profile'
 import Checkout from './pages/Checkout'
 import PaymentSuccess from './pages/PaymentSuccess'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 function App() {
   // Socket.IO 연결 초기화
@@ -38,50 +40,52 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Router>
-        <Routes>
-        {/* 인증 페이지 (레이아웃 없음) */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/student-verification" element={<StudentVerification />} />
+          <Routes>
+            {/* 인증 페이지 (레이아웃 없음) */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/student-verification" element={<StudentVerification />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-        {/* 메인 앱 페이지 (MobileLayout 적용) */}
-        <Route
-          path="/*"
-          element={
-            <MobileLayout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/map" element={<Map />} />
-                <Route path="/events" element={<Events />} />
-                <Route path="/events/:id" element={<EventDetail />} />
-                <Route path="/foodtrucks" element={<FoodTrucks />} />
-                <Route path="/foodtrucks/:id" element={<FoodTruckDetail />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/payment/success" element={<PaymentSuccess />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/my-reservations" element={<MyReservations />} />
-                <Route path="/profile" element={<Profile />} />
+            {/* 메인 앱 페이지 (MobileLayout 적용) */}
+            <Route
+              path="/*"
+              element={
+                <MobileLayout>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/map" element={<Map />} />
+                    <Route path="/events" element={<Events />} />
+                    <Route path="/events/:id" element={<EventDetail />} />
+                    <Route path="/foodtrucks" element={<FoodTrucks />} />
+                    <Route path="/foodtrucks/:id" element={<FoodTruckDetail />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/payment/success" element={<PaymentSuccess />} />
+                    <Route path="/orders" element={<Orders />} />
+                    <Route path="/my-reservations" element={<MyReservations />} />
+                    <Route path="/profile" element={<Profile />} />
 
-                {/* 관리자 페이지 */}
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/home" element={<AdminHome />} />
-                <Route path="/admin/events" element={<EventManagement />} />
-                <Route path="/admin/reservations" element={<ReservationManagement />} />
-                <Route path="/admin/qr-scanner" element={<QRScanner />} />
+                    {/* 관리자 페이지 */}
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/home" element={<AdminHome />} />
+                    <Route path="/admin/events" element={<EventManagement />} />
+                    <Route path="/admin/reservations" element={<ReservationManagement />} />
+                    <Route path="/admin/qr-scanner" element={<QRScanner />} />
 
-                {/* 푸드트럭 운영자 페이지 */}
-                <Route path="/vendor" element={<VendorDashboard />} />
-                <Route path="/vendor/menu" element={<MenuManagement />} />
-                <Route path="/vendor/orders" element={<OrderManagement />} />
-                <Route path="/vendor/sales" element={<SalesReport />} />
-              </Routes>
-            </MobileLayout>
-          }
-        />
-        </Routes>
-        <ToastContainer />
-      </Router>
+                    {/* 푸드트럭 운영자 페이지 */}
+                    <Route path="/vendor" element={<VendorDashboard />} />
+                    <Route path="/vendor/menu" element={<MenuManagement />} />
+                    <Route path="/vendor/orders" element={<OrderManagement />} />
+                    <Route path="/vendor/sales" element={<SalesReport />} />
+                  </Routes>
+                </MobileLayout>
+              }
+            />
+          </Routes>
+          <ToastContainer />
+        </Router>
       </ErrorBoundary>
     </QueryClientProvider>
   )

@@ -17,11 +17,23 @@ export type { User, UserRole } from '@/stores/authStore'
 // 현재 사용자 정보 조회
 export function useCurrentUser() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const logout = useAuthStore((state) => state.logout)
 
   return useQuery({
     queryKey: ['auth', 'me'],
-    queryFn: () => authApi.getCurrentUser(),
+    queryFn: async () => {
+      try {
+        return await authApi.getCurrentUser()
+      } catch (error: any) {
+        // 인증 실패 시 로그아웃 처리
+        if (error?.response?.status === 401) {
+          logout()
+        }
+        throw error
+      }
+    },
     enabled: isAuthenticated,
+    retry: false, // 인증 실패 시 재시도 안 함
   })
 }
 
@@ -108,6 +120,10 @@ export function useRequestPasswordReset() {
     onSuccess: () => {
       toast.success('비밀번호 재설정 링크가 이메일로 전송되었습니다')
     },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || '이메일 전송에 실패했습니다'
+      toast.error(message)
+    },
   })
 }
 
@@ -118,6 +134,10 @@ export function useResetPassword() {
       authApi.resetPassword(token, password),
     onSuccess: () => {
       toast.success('비밀번호가 재설정되었습니다')
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || '비밀번호 재설정에 실패했습니다'
+      toast.error(message)
     },
   })
 }
@@ -130,6 +150,13 @@ export function useRequestStudentVerification() {
     onSuccess: () => {
       toast.success('인증 코드가 이메일로 전송되었습니다')
     },
+  })
+}
+
+// 인증 코드 검증 (학생 정보 입력 전 단계)
+export function useVerifyCode() {
+  return useMutation({
+    mutationFn: (code: string) => authApi.verifyCode(code),
   })
 }
 
@@ -152,15 +179,44 @@ export function useVerifyStudent() {
   })
 }
 
+// 회원 탈퇴
+export function useDeleteAccount() {
+  const queryClient = useQueryClient()
+  const logout = useAuthStore((state) => state.logout)
+
+  return useMutation({
+    mutationFn: (password: string) => authApi.deleteAccount(password),
+    onSuccess: () => {
+      logout()
+      queryClient.clear()
+      toast.success('회원 탈퇴가 완료되었습니다')
+    },
+    onError: () => {
+      toast.error('비밀번호가 일치하지 않습니다')
+    },
+  })
+}
+
 // 통합 useAuth 훅 (기존 코드 호환성을 위해)
 export function useAuth() {
   const { user, isAuthenticated } = useAuthStore()
   const { data: currentUser, isLoading } = useCurrentUser()
+  const updateUser = useAuthStore((state) => state.updateUser)
 
   const logoutMutation = useLogout()
 
-  // 실제 사용자 정보는 API에서 가져온 것을 우선 사용
-  const activeUser = currentUser || user
+  // 실제 사용자 정보는 API에서 가져온 것을 기본으로 하되,
+  // 로컬 스토어의 role을 우선 사용 (역할 전환 기능 지원)
+  const activeUser = currentUser
+    ? { ...currentUser, role: user?.role || currentUser.role }
+    : user
+
+  const switchRole = (role: 'user' | 'admin' | 'vendor') => {
+    // 개발 환경에서만 역할 전환 허용 (테스트 목적)
+    if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+      updateUser({ role })
+    }
+  }
 
   return {
     user: activeUser,
@@ -171,7 +227,7 @@ export function useAuth() {
     isVendor: activeUser?.role === 'vendor',
     isUser: activeUser?.role === 'user',
     // 레거시 호환성을 위한 함수들
-    login: () => {}, // 실제로는 useLogin 훅을 사용해야 함
-    switchRole: () => {}, // 개발 환경에서만 사용하던 기능
+    login: () => { }, // 실제로는 useLogin 훅을 사용해야 함
+    switchRole,
   }
 }

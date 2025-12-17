@@ -12,6 +12,9 @@ export interface User {
   phone?: string
   role: UserRole
   isVerified?: boolean
+  isStudentVerified?: boolean
+  studentEmail?: string
+  grade?: number
 }
 
 interface AuthState {

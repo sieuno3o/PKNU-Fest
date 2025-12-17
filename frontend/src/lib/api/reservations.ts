@@ -4,11 +4,12 @@ import type { Reservation } from '@/stores/reservationStore'
 // 타입 정의
 export interface CreateReservationRequest {
   eventId: string
-  attendees: number
+  partySize?: number
+  timeSlotId?: string
 }
 
 export interface UpdateReservationRequest {
-  attendees?: number
+  partySize?: number
   status?: 'confirmed' | 'cancelled' | 'checked-in' | 'no-show'
 }
 
@@ -69,7 +70,8 @@ export const reservationsApi = {
   // 모든 예약 조회 (관리자)
   getAll: async (filters?: ReservationFilters): Promise<Reservation[]> => {
     const response = await api.get<Reservation[]>('/admin/reservations', { params: filters })
-    return response.data
+    // 백엔드가 배열을 직접 반환하는지, ApiResponse로 래핑하는지 확인
+    return Array.isArray(response.data) ? response.data : (response.data as any).data || []
   },
 
   // 행사별 예약 통계 (관리자)

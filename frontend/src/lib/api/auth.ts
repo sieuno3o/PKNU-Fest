@@ -29,13 +29,14 @@ export interface ChangePasswordRequest {
 }
 
 export interface RequestStudentVerificationRequest {
-  email: string
-  studentId: string
-  name: string
+  pknu_student_email: string
 }
 
 export interface VerifyStudentRequest {
-  token: string
+  code: string
+  studentId: string
+  department: string
+  grade: number
 }
 
 export interface AuthResponse {
@@ -81,7 +82,13 @@ export const authApi = {
     await api.post('/auth/verify-student', data)
   },
 
-  // 학생 인증 확인 (이메일 토큰)
+  // 인증 코드 검증 (학생 정보 입력 전 단계)
+  verifyCode: async (code: string): Promise<{ verified: boolean }> => {
+    const response = await api.post<ApiResponse<{ verified: boolean }>>('/auth/verify-code', { code })
+    return response.data.data
+  },
+
+  // 학생 인증 확인 (학생 정보 포함)
   verifyStudent: async (data: VerifyStudentRequest): Promise<User> => {
     const response = await api.post<ApiResponse<User>>('/auth/confirm-student', data)
     return response.data.data
@@ -112,5 +119,10 @@ export const authApi = {
   getCurrentUser: async (): Promise<User> => {
     const response = await api.get<ApiResponse<User>>('/auth/me')
     return response.data.data
+  },
+
+  // 회원 탈퇴
+  deleteAccount: async (password: string): Promise<void> => {
+    await api.delete('/auth/me', { data: { password } })
   },
 }

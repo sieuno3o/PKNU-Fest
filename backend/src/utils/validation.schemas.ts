@@ -13,13 +13,21 @@ export const sendStudentVerificationSchema = z.object({
     .string()
     .email()
     .refine(
-      (email) => email.endsWith('@pknu.ac.kr') || email.endsWith('@office.pknu.ac.kr'),
-      { message: 'Must be a PKNU email address (@pknu.ac.kr or @office.pknu.ac.kr)' }
+      (email) => email.endsWith('@pukyong.ac.kr') || email.endsWith('@office.pknu.ac.kr'),
+      { message: 'Must be a PKNU email address (@pukyong.ac.kr or @office.pknu.ac.kr)' }
     ),
+})
+
+// 코드만 검증하는 스키마
+export const verifyCodeOnlySchema = z.object({
+  code: z.string().length(6, 'Verification code must be 6 characters'),
 })
 
 export const confirmStudentVerificationSchema = z.object({
   code: z.string().length(6, 'Verification code must be 6 characters'),
+  studentId: z.string().min(1, 'Student ID is required'),
+  department: z.string().min(1, 'Department is required'),
+  grade: z.number().int().min(1).max(4, 'Grade must be between 1 and 4'),
 })
 
 export const loginSchema = z.object({
@@ -32,15 +40,24 @@ export const updateProfileSchema = z.object({
   email: z.string().email().optional(),
 })
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+})
+
 // Event Schemas
 export const createEventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
+  date: z.string().min(1, 'Date is required'),
+  startTime: z.string().min(1, 'Start time is required'),
+  endTime: z.string().min(1, 'End time is required'),
   location: z.string().min(1, 'Location is required'),
-  latitude: z.number(),
-  longitude: z.number(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   thumbnail: z.string().optional(),
+  image: z.string().optional(),
   images: z.array(z.string()).max(5, 'Maximum 5 images allowed').optional(),
   isStudentOnly: z.boolean().optional().default(false),
   capacity: z.number().int().positive().nullable().optional(),
@@ -115,6 +132,21 @@ export const createTimeSlotSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   capacity: z.number().int().positive().nullable().optional(),
+})
+
+// Password Reset Schemas
+export const requestPasswordResetSchema = z.object({
+  email: z.string().email('Invalid email address'),
+})
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
+// Delete Account Schema
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, 'Password is required'),
 })
 
 export type RegisterInput = z.infer<typeof registerSchema>

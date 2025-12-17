@@ -17,7 +17,7 @@ export default function ReservationModal({ event, onClose }: ReservationModalPro
         try {
             await createReservation.mutateAsync({
                 eventId: event.id,
-                attendees,
+                partySize: attendees,
             })
             toast.success('예약이 완료되었습니다!')
             onClose()

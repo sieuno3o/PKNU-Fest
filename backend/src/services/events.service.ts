@@ -4,20 +4,30 @@ import { CreateEventInput, UpdateEventInput } from '../utils/validation.schemas'
 
 export class EventsService {
   async createEvent(data: CreateEventInput) {
+    // date와 startTime, endTime을 조합하여 DateTime 생성
+    const startDateTime = data.date && data.startTime
+      ? new Date(`${data.date}T${data.startTime}:00`)
+      : new Date()
+    const endDateTime = data.date && data.endTime
+      ? new Date(`${data.date}T${data.endTime}:00`)
+      : new Date()
+
     const event = await prisma.event.create({
       data: {
         title: data.title,
         description: data.description,
         category: data.category,
         location: data.location,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        thumbnail: data.thumbnail,
+        latitude: data.latitude ?? 35.1335, // 부경대 기본 좌표
+        longitude: data.longitude ?? 129.1036,
+        thumbnail: data.thumbnail || data.image,
         images: data.images || [],
         isStudentOnly: data.isStudentOnly || false,
         capacity: data.capacity,
         status: data.status || 'DRAFT',
         organizer: data.organizer,
+        startTime: startDateTime,
+        endTime: endDateTime,
       },
     })
 

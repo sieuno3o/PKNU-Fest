@@ -32,6 +32,8 @@ export interface CreateEventRequest {
   startTime: string
   endTime: string
   location: string
+  latitude?: number
+  longitude?: number
   capacity: number
   image?: string
   tags?: string[]

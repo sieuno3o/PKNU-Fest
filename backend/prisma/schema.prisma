@@ -19,6 +19,9 @@ model User {
   role              UserRole @default(USER)
   isStudentVerified Boolean  @default(false) // 학생 인증 여부
   studentEmail      String?  @unique // 인증한 학교 이메일
+  studentId         String?  // 학번
+  department        String?  // 학과
+  grade             Int?     // 학년 (1-4)
   verified          Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -46,6 +49,8 @@ model Event {
   location      String
   latitude      Float
   longitude     Float
+  startTime     DateTime?   // 행사 시작 시간
+  endTime       DateTime?   // 행사 종료 시간
   thumbnail     String?
   images        String[] // 상세 이미지 (최대 5장)
   isStudentOnly Boolean     @default(false) // 학생 전용 여부

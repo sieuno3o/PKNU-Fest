@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
-import { useAuth, useUpdateProfile, useChangePassword, type UserRole } from '../hooks/useAuth'
+import { LogOut, Trash2, AlertTriangle } from 'lucide-react'
+import { useAuth, useUpdateProfile, useChangePassword, useDeleteAccount, type UserRole } from '../hooks/useAuth'
 import { toast } from '@/components/ui/Toast'
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import ProfileCard from '@/components/profile/ProfileCard'
@@ -15,6 +15,7 @@ export default function Profile() {
   const { user, switchRole, logout: authLogout } = useAuth()
   const updateProfileMutation = useUpdateProfile()
   const changePasswordMutation = useChangePassword()
+  const deleteAccountMutation = useDeleteAccount()
 
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -27,6 +28,8 @@ export default function Profile() {
     newPassword: '',
     confirmPassword: '',
   })
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
 
   // 프로필 수정
   const handleSaveProfile = () => {
@@ -45,7 +48,7 @@ export default function Profile() {
 
   // 역할 전환 (테스트용)
   const handleRoleSwitch = (role: UserRole) => {
-    switchRole()
+    switchRole(role)
     alert(`${role === 'admin' ? '관리자' : role === 'vendor' ? '업체' : '사용자'} 모드로 전환되었습니다.`)
     window.location.reload()
   }
@@ -88,6 +91,19 @@ export default function Profile() {
     }
   }
 
+  // 회원 탈퇴
+  const handleDeleteAccount = () => {
+    if (!deletePassword) {
+      toast.error('비밀번호를 입력해주세요.')
+      return
+    }
+    deleteAccountMutation.mutate(deletePassword, {
+      onSuccess: () => {
+        navigate('/')
+      },
+    })
+  }
+
   // 사용자가 없으면 로그인 페이지로
   if (!user) {
     navigate('/login')
@@ -113,7 +129,15 @@ export default function Profile() {
           onFormChange={(field, value) => setEditForm({ ...editForm, [field]: value })}
         />
 
-        <StudentVerificationBanner isVerified={user.isVerified || false} />
+        <StudentVerificationBanner
+          isVerified={user.isStudentVerified || false}
+          studentInfo={{
+            studentEmail: user.studentEmail,
+            studentId: user.studentId,
+            department: user.department,
+            grade: user.grade,
+          }}
+        />
 
         <SettingsMenu onPasswordChangeClick={() => setShowPasswordModal(true)} />
 
@@ -131,6 +155,15 @@ export default function Profile() {
           <LogOut className="w-5 h-5" />
           로그아웃
         </button>
+
+        {/* 회원 탈퇴 버튼 */}
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="w-full flex items-center justify-center gap-2 p-3 text-gray-400 text-sm hover:text-red-500 transition mt-4"
+        >
+          <Trash2 className="w-4 h-4" />
+          회원 탈퇴
+        </button>
       </div>
 
       <ChangePasswordModal
@@ -141,6 +174,57 @@ export default function Profile() {
         onSubmit={handleChangePassword}
         onFormChange={(field, value) => setPasswordForm({ ...passwordForm, [field]: value })}
       />
+
+      {/* 회원 탈퇴 모달 */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">회원 탈퇴</h3>
+            </div>
+
+            <p className="text-gray-600 text-sm mb-4">
+              정말로 탈퇴하시겠습니까?<br />
+              <span className="text-red-500 font-medium">모든 예약과 주문 내역이 삭제됩니다.</span>
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                비밀번호 확인
+              </label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="현재 비밀번호 입력"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeletePassword('')
+                }}
+                className="flex-1 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteAccountMutation.isPending || !deletePassword}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50 transition"
+              >
+                {deleteAccountMutation.isPending ? '처리 중...' : '탈퇴하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

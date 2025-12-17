@@ -1,4 +1,4 @@
-import { User, Mail, Phone, School, Edit2, Check, X } from 'lucide-react'
+import { User, Mail, Phone, Edit2, Check, X } from 'lucide-react'
 
 interface ProfileCardProps {
   user: {
@@ -100,15 +100,6 @@ export default function ProfileCard({
             ) : (
               <p className="text-gray-900 font-medium">{user.phone}</p>
             )}
-          </div>
-        </div>
-
-        {/* 학번 */}
-        <div className="flex items-center gap-3">
-          <School className="w-5 h-5 text-gray-400" />
-          <div className="flex-1">
-            <p className="text-xs text-gray-500 mb-1">학번</p>
-            <p className="text-gray-900 font-medium">{user.studentId}</p>
           </div>
         </div>
       </div>

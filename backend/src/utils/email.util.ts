@@ -212,3 +212,69 @@ export const sendOrderConfirmationEmail = async (
     text: `안녕하세요, ${name}님! 주문이 접수되었습니다. 주문 번호: ${orderNumber}, 결제 금액: ${totalPrice.toLocaleString()}원`,
   })
 }
+
+// 비밀번호 재설정 이메일
+export const sendPasswordResetEmail = async (
+  email: string,
+  name: string,
+  resetToken: string,
+  frontendUrl: string = process.env.FRONTEND_URL || 'http://localhost:5173'
+) => {
+  const resetLink = `${frontendUrl}/reset-password/${resetToken}`
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: bold; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🔐 비밀번호 재설정</h1>
+        </div>
+        <div class="content">
+          <p>안녕하세요, <strong>${name}</strong>님!</p>
+          <p>PKNU-Fest 비밀번호 재설정을 요청하셨습니다.</p>
+          <p>아래 버튼을 클릭하여 새 비밀번호를 설정해주세요:</p>
+
+          <div style="text-align: center;">
+            <a href="${resetLink}" class="button">비밀번호 재설정</a>
+          </div>
+
+          <div class="warning">
+            ⚠️ 이 링크는 <strong>30분간</strong> 유효합니다.<br>
+            본인이 요청하지 않았다면 이 이메일을 무시하셔도 됩니다.
+          </div>
+
+          <p style="font-size: 12px; color: #666;">
+            버튼이 작동하지 않으면 아래 링크를 복사하여 브라우저에 붙여넣으세요:<br>
+            <a href="${resetLink}">${resetLink}</a>
+          </p>
+
+          <div class="footer">
+            <p>© 2025 PKNU-Fest. All rights reserved.</p>
+            <p>부경대학교 축제 관리 시스템</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  return sendEmail({
+    to: email,
+    subject: '[PKNU-Fest] 비밀번호 재설정',
+    html,
+    text: `안녕하세요, ${name}님! 비밀번호 재설정 링크: ${resetLink} (30분간 유효)`,
+  })
+}

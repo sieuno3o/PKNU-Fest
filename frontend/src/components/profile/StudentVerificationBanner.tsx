@@ -1,11 +1,17 @@
 import { useNavigate } from 'react-router-dom'
-import { School, Check } from 'lucide-react'
+import { School, Check, GraduationCap, Building, Hash } from 'lucide-react'
 
 interface StudentVerificationBannerProps {
   isVerified?: boolean
+  studentInfo?: {
+    studentEmail?: string
+    studentId?: string
+    department?: string
+    grade?: number
+  }
 }
 
-export default function StudentVerificationBanner({ isVerified }: StudentVerificationBannerProps) {
+export default function StudentVerificationBanner({ isVerified, studentInfo }: StudentVerificationBannerProps) {
   const navigate = useNavigate()
 
   if (isVerified) {
@@ -16,8 +22,39 @@ export default function StudentVerificationBanner({ isVerified }: StudentVerific
             <Check className="w-6 h-6 text-green-600" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">학생 인증 완료</h3>
-            <p className="text-sm text-gray-600">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">학생 인증 완료</h3>
+
+            {/* 학생 정보 표시 */}
+            {studentInfo && (
+              <div className="space-y-2 text-sm text-gray-600">
+                {studentInfo.studentEmail && (
+                  <div className="flex items-center gap-2">
+                    <School className="w-4 h-4 text-green-600" />
+                    <span>{studentInfo.studentEmail}</span>
+                  </div>
+                )}
+                {studentInfo.department && (
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-green-600" />
+                    <span>{studentInfo.department}</span>
+                  </div>
+                )}
+                {studentInfo.studentId && (
+                  <div className="flex items-center gap-2">
+                    <Hash className="w-4 h-4 text-green-600" />
+                    <span>{studentInfo.studentId}</span>
+                  </div>
+                )}
+                {studentInfo.grade && (
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-green-600" />
+                    <span>{studentInfo.grade}학년</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p className="text-sm text-gray-500 mt-3">
               부경대학교 학생으로 인증되었습니다. 학생 전용 혜택을 이용하실 수 있습니다.
             </p>
           </div>

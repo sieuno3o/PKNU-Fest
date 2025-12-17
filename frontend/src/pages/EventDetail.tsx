@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2, X } from 'lucide-react'
 import { useEvent } from '@/hooks/useEvents'
+import { useAuthStore } from '@/stores/authStore'
+import { toast } from '@/components/ui/Toast'
 import EventDetailHeader from '@/components/events/EventDetailHeader'
 import EventInfoCard from '@/components/events/EventInfoCard'
 import EventReservationStatus from '@/components/events/EventReservationStatus'
@@ -18,6 +20,9 @@ export default function EventDetail() {
   // API에서 이벤트 데이터 가져오기
   const { data: event, isLoading, error } = useEvent(id!)
 
+  // 인증 상태 가져오기
+  const { user, isAuthenticated } = useAuthStore()
+
   // 공유
   const handleShare = () => {
     alert('공유 기능은 준비 중입니다!')
@@ -25,6 +30,19 @@ export default function EventDetail() {
 
   // 예약
   const handleReservation = () => {
+    // 학생 전용 행사인 경우 인증 확인
+    if (event?.requiresStudentVerification) {
+      if (!isAuthenticated) {
+        toast.error('로그인이 필요합니다')
+        navigate('/login')
+        return
+      }
+      if (!user?.isVerified) {
+        toast.warning('이 행사는 학생 전용입니다. 학생 인증이 필요합니다.')
+        navigate('/student-verification')
+        return
+      }
+    }
     setShowReservationModal(true)
   }
 
