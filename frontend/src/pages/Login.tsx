@@ -131,17 +131,6 @@ export default function Login() {
             </p>
           </div>
         </div>
-
-        {/* 간편 로그인 */}
-        <div className="mt-6 text-center">
-          <p className="text-white/80 text-sm mb-4">또는</p>
-          <div className="space-y-3">
-            <button className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
-              <span className="text-xl">🎓</span>
-              학생 계정으로 로그인
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   )

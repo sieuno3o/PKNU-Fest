@@ -16,9 +16,10 @@ export interface Event {
   capacity: number
   currentReservations: number
   image: string
+  thumbnail?: string
   tags: string[]
   requiresStudentVerification: boolean
-  status: 'upcoming' | 'ongoing' | 'ended'
+  status: string
   organizerId: string
   createdAt: string
   updatedAt: string

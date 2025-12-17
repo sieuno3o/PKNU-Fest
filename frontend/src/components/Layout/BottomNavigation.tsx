@@ -42,11 +42,12 @@ export default function BottomNavigation() {
     { path: '/profile', label: 'MY', icon: User },
   ]
 
-  // 역할에 따라 다른 메뉴 표시
+  // 역할에 따라 다른 메뉴 표시 (대소문자 구분 없이)
   let navItems = userNavItems
-  if (user?.role === 'admin') {
+  const userRole = user?.role?.toLowerCase()
+  if (userRole === 'admin') {
     navItems = adminNavItems
-  } else if (user?.role === 'vendor') {
+  } else if (userRole === 'vendor') {
     navItems = vendorNavItems
   }
 

@@ -19,6 +19,34 @@ export default function Register() {
     department: '',
   })
 
+  // 전화번호 포맷팅 함수 (010-1234-5678 형식)
+  const formatPhoneNumber = (value: string) => {
+    // 숫자만 추출
+    const numbers = value.replace(/\D/g, '')
+
+    // 11자리까지만 허용
+    const limited = numbers.slice(0, 11)
+
+    // 포맷팅
+    if (limited.length <= 3) {
+      return limited
+    } else if (limited.length <= 7) {
+      return `${limited.slice(0, 3)}-${limited.slice(3)}`
+    } else {
+      return `${limited.slice(0, 3)}-${limited.slice(3, 7)}-${limited.slice(7)}`
+    }
+  }
+
+  // 전화번호에서 하이픈 제거 (백엔드 전송용)
+  const getRawPhoneNumber = (formatted: string) => {
+    return formatted.replace(/\D/g, '')
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value)
+    setFormData({ ...formData, phone: formatted })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -37,9 +65,16 @@ export default function Register() {
     try {
       setIsLoading(true)
 
-      // API 호출
+      // API 호출 (전화번호는 숫자만 전송)
       const { email, password, name, phone, studentId, department } = formData
-      await authApi.register({ email, password, name, phone, studentId, department })
+      await authApi.register({
+        email,
+        password,
+        name,
+        phone: getRawPhoneNumber(phone),
+        studentId,
+        department
+      })
 
       toast.success('회원가입이 완료되었습니다!')
 
@@ -123,7 +158,7 @@ export default function Register() {
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={handlePhoneChange}
                   className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   placeholder="010-1234-5678"
                   required

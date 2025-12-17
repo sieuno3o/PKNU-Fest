@@ -223,9 +223,9 @@ export function useAuth() {
     isLoading,
     isAuthenticated,
     logout: () => logoutMutation.mutate(),
-    isAdmin: activeUser?.role === 'admin',
-    isVendor: activeUser?.role === 'vendor',
-    isUser: activeUser?.role === 'user',
+    isAdmin: activeUser?.role?.toLowerCase() === 'admin',
+    isVendor: activeUser?.role?.toLowerCase() === 'vendor',
+    isUser: activeUser?.role?.toLowerCase() === 'user' || !activeUser?.role,
     // 레거시 호환성을 위한 함수들
     login: () => { }, // 실제로는 useLogin 훅을 사용해야 함
     switchRole,
