@@ -20,7 +20,7 @@ export default function BottomNavigation() {
   // 역할별 네비게이션 메뉴
   const userNavItems = [
     { path: '/', label: '홈', icon: Home },
-    { path: '/events', label: '행사', icon: Calendar },
+    { path: '/booths', label: '행사', icon: Calendar },
     { path: '/map', label: '지도', icon: MapPin },
     { path: '/foodtrucks', label: '음식', icon: UtensilsCrossed },
     { path: '/profile', label: 'MY', icon: User },
