@@ -10,7 +10,7 @@ import OrderFilters from '@/components/vendor/OrderFilters'
 import OrderCard from '@/components/vendor/OrderCard'
 import OrderDetailModal from '@/components/vendor/OrderDetailModal'
 
-type OrderStatus = 'all' | 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+type OrderStatus = 'all' | 'PENDING' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED'
 
 export default function OrderManagement() {
   const { user } = useAuth()
@@ -39,28 +39,37 @@ export default function OrderManagement() {
 
   const isLoading = loadingTrucks || loadingOrders
 
+  // Normalize status to uppercase for comparison
+  const normalizeStatus = (status: string) => status?.toUpperCase()
+
   // 필터링 및 정렬
   const sortedOrders = useMemo(() => {
-    const statusOrder = { pending: 1, preparing: 2, ready: 3, completed: 4, cancelled: 5 }
-    return [...orders].sort((a, b) => statusOrder[a.status] - statusOrder[b.status])
+    const statusOrder: Record<string, number> = {
+      PENDING: 1, pending: 1,
+      PREPARING: 2, preparing: 2,
+      READY: 3, ready: 3,
+      COMPLETED: 4, completed: 4,
+      CANCELLED: 5, cancelled: 5
+    }
+    return [...orders].sort((a, b) => (statusOrder[a.status] || 6) - (statusOrder[b.status] || 6))
   }, [orders])
 
   // 통계
   const stats = useMemo(() => {
     return {
-      pending: orders.filter((o) => o.status === 'pending').length,
-      preparing: orders.filter((o) => o.status === 'preparing').length,
-      ready: orders.filter((o) => o.status === 'ready').length,
+      pending: orders.filter((o) => normalizeStatus(o.status) === 'PENDING').length,
+      preparing: orders.filter((o) => normalizeStatus(o.status) === 'PREPARING').length,
+      ready: orders.filter((o) => normalizeStatus(o.status) === 'READY').length,
       todayTotal: orders
-        .filter((o) => o.status === 'completed')
-        .reduce((sum, o) => sum + o.totalAmount, 0),
+        .filter((o) => normalizeStatus(o.status) === 'COMPLETED')
+        .reduce((sum, o) => sum + (o.totalPrice || o.totalAmount || 0), 0),
     }
   }, [orders])
 
   // 주문 상태 변경
   const handleStatusChange = async (
     orderId: string,
-    newStatus: 'preparing' | 'ready' | 'completed' | 'cancelled'
+    newStatus: 'preparing' | 'ready' | 'completed' | 'cancelled' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED'
   ) => {
     if (!vendorTruck) return
 
@@ -68,7 +77,7 @@ export default function OrderManagement() {
       await updateOrderStatus.mutateAsync({
         truckId: vendorTruck.id,
         orderId,
-        data: { status: newStatus },
+        data: { status: newStatus.toUpperCase() as any },
       })
 
       // 알림 진동
@@ -128,7 +137,7 @@ export default function OrderManagement() {
     <div className="min-h-full bg-gray-50 pb-20">
       <OrderHeader pendingCount={stats.pending} />
       <OrderStats {...stats} />
-      <OrderFilters selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
+      <OrderFilters selectedStatus={selectedStatus} onStatusChange={setSelectedStatus as any} />
 
       {/* 주문 목록 */}
       <div className="px-4 space-y-3">

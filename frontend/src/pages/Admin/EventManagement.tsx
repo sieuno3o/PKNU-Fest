@@ -31,8 +31,11 @@ export default function EventManagement() {
     startTime: '',
     endTime: '',
     location: '',
-    capacity: 0,
+    capacity: null as any,
     requiresStudentVerification: false,
+    reservationEnabled: false,
+    reservationType: 'FIRST_COME',
+    isStudentOnly: false,
   })
 
   // 필터링
@@ -55,8 +58,11 @@ export default function EventManagement() {
       startTime: '',
       endTime: '',
       location: '',
-      capacity: 0,
+      capacity: null as any,
       requiresStudentVerification: false,
+      reservationEnabled: false,
+      reservationType: 'FIRST_COME',
+      isStudentOnly: false,
     })
     setShowModal(true)
   }
@@ -64,18 +70,42 @@ export default function EventManagement() {
   // 행사 수정
   const handleEdit = (event: Event) => {
     setEditingEvent(event)
+
+    // DateTime을 날짜와 시간으로 분리
+    let dateStr = ''
+    let startTimeStr = ''
+    let endTimeStr = ''
+
+    // startTime이 있으면 파싱
+    if (event.startTime) {
+      const startDate = new Date(event.startTime)
+      dateStr = startDate.toISOString().split('T')[0] // YYYY-MM-DD
+      startTimeStr = startDate.toTimeString().slice(0, 5) // HH:MM
+    }
+
+    // endTime이 있으면 파싱
+    if (event.endTime) {
+      const endDate = new Date(event.endTime)
+      endTimeStr = endDate.toTimeString().slice(0, 5) // HH:MM
+    }
+
     setFormData({
       title: event.title,
       category: event.category,
       description: event.description,
-      date: event.date,
-      startTime: event.startTime,
-      endTime: event.endTime,
+      date: dateStr,
+      startTime: startTimeStr,
+      endTime: endTimeStr,
       location: event.location,
+      latitude: event.latitude,
+      longitude: event.longitude,
       capacity: event.capacity,
       requiresStudentVerification: event.requiresStudentVerification,
-      image: event.image,
+      image: event.image || event.thumbnail,
       tags: event.tags,
+      reservationEnabled: event.reservationEnabled || false,
+      reservationType: event.reservationType || 'FIRST_COME',
+      isStudentOnly: event.isStudentOnly || false,
     })
     setShowModal(true)
   }
@@ -93,10 +123,14 @@ export default function EventManagement() {
 
   // 폼 제출
   const handleSubmit = async () => {
-    if (!formData.title || !formData.date || !formData.startTime || !formData.location) {
-      toast.error('필수 항목을 모두 입력해주세요.')
+    // 필수 항목 검증 (카테고리 및 종료 시간 포함)
+    if (!formData.title || !formData.category || !formData.date || !formData.startTime || !formData.endTime || !formData.location) {
+      toast.error('필수 항목(*)을 모두 입력해주세요.')
       return
     }
+
+    // 디버깅: 제출되는 데이터 확인
+    console.log('Submitting formData:', formData)
 
     try {
       if (editingEvent) {
@@ -108,13 +142,14 @@ export default function EventManagement() {
         await createEvent.mutateAsync(formData as CreateEventRequest)
       }
       setShowModal(false)
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Event submission error:', error.response?.data || error)
       toast.error(editingEvent ? '행사 수정에 실패했습니다.' : '행사 추가에 실패했습니다.')
     }
   }
 
   const handleFormChange = (field: keyof CreateEventRequest, value: any) => {
-    setFormData({ ...formData, [field]: value })
+    setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   // Loading state

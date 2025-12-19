@@ -103,3 +103,67 @@ export function useEventEvents(
     }
   }, [onUpdate])
 }
+
+// 실시간 알림 구독 훅
+import { useNotificationStore } from '@/stores/notificationStore'
+
+export function useNotifications() {
+  const addNotification = useNotificationStore((state) => state.addNotification)
+
+  useEffect(() => {
+    const socket = getSocket()
+
+    // 예약 관련 알림
+    const handleReservationNotification = (data: { title: string; message: string; link?: string }) => {
+      addNotification({
+        type: 'reservation',
+        title: data.title || '예약 알림',
+        message: data.message,
+        link: data.link,
+      })
+    }
+
+    // 주문 관련 알림
+    const handleOrderNotification = (data: { title: string; message: string; link?: string }) => {
+      addNotification({
+        type: 'order',
+        title: data.title || '주문 알림',
+        message: data.message,
+        link: data.link,
+      })
+    }
+
+    // 행사 관련 알림
+    const handleEventNotification = (data: { title: string; message: string; link?: string }) => {
+      addNotification({
+        type: 'event',
+        title: data.title || '행사 알림',
+        message: data.message,
+        link: data.link,
+      })
+    }
+
+    // 일반 알림
+    const handleNotification = (data: { type?: string; title: string; message: string; link?: string }) => {
+      addNotification({
+        type: (data.type as any) || 'info',
+        title: data.title,
+        message: data.message,
+        link: data.link,
+      })
+    }
+
+    socket.on('reservation:notification', handleReservationNotification)
+    socket.on('order:notification', handleOrderNotification)
+    socket.on('event:notification', handleEventNotification)
+    socket.on('notification', handleNotification)
+
+    return () => {
+      socket.off('reservation:notification', handleReservationNotification)
+      socket.off('order:notification', handleOrderNotification)
+      socket.off('event:notification', handleEventNotification)
+      socket.off('notification', handleNotification)
+    }
+  }, [addNotification])
+}
+

@@ -42,17 +42,17 @@ export default function OrderCard({ order }: OrderCardProps) {
             </div>
 
             <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">
-                {order.items?.map((item) => (
+                {(order.orderItems || order.items || []).map((item) => (
                     <div key={item.id} className="flex items-center justify-between text-sm">
                         <span className="text-gray-700">{item.menuItem?.name || '메뉴'} x {item.quantity}</span>
-                        <span className="text-gray-900 font-medium">{(item.price * item.quantity).toLocaleString()}원</span>
+                        <span className="text-gray-900 font-medium">{((item.price || 0) * item.quantity).toLocaleString()}원</span>
                     </div>
-                )) || []}
+                ))}
             </div>
 
             <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-600">총 결제금액</span>
-                <span className="text-lg font-bold text-orange-600">{order.totalAmount.toLocaleString()}원</span>
+                <span className="text-lg font-bold text-orange-600">{(order.totalPrice || order.totalAmount || 0).toLocaleString()}원</span>
             </div>
 
             <div className="flex items-center justify-between text-xs text-gray-500">
@@ -65,7 +65,7 @@ export default function OrderCard({ order }: OrderCardProps) {
 
             {(order.status === 'pending' || order.status === 'preparing' || order.status === 'ready') && (
                 <div className={`mt-3 p-3 rounded-xl text-sm font-medium ${order.status === 'ready' ? 'bg-green-50 text-green-700' :
-                        order.status === 'preparing' ? 'bg-blue-50 text-blue-700' : 'bg-yellow-50 text-yellow-700'
+                    order.status === 'preparing' ? 'bg-blue-50 text-blue-700' : 'bg-yellow-50 text-yellow-700'
                     }`}>
                     {config?.description || '주문 처리 중'}
                 </div>

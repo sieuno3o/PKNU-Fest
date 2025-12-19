@@ -10,11 +10,11 @@ export interface CreateReservationRequest {
 
 export interface UpdateReservationRequest {
   partySize?: number
-  status?: 'confirmed' | 'cancelled' | 'checked-in' | 'no-show'
+  status?: 'confirmed' | 'cancelled' | 'checked-in' | 'no-show' | 'CONFIRMED' | 'CANCELLED' | 'CHECKED_IN' | 'NO_SHOW' | 'PENDING' | 'REJECTED'
 }
 
 export interface ReservationFilters {
-  status?: 'confirmed' | 'cancelled' | 'checked-in' | 'no-show'
+  status?: string
   eventId?: string
   userId?: string
   startDate?: string
@@ -34,7 +34,8 @@ export const reservationsApi = {
   // 예약 상세 조회
   getById: async (id: string): Promise<Reservation> => {
     const response = await api.get<Reservation>(`/reservations/${id}`)
-    return response.data
+    // 백엔드가 { data: reservation } 형식으로 래핑할 수 있음
+    return (response.data as any).data || response.data
   },
 
   // 예약 생성
@@ -78,5 +79,17 @@ export const reservationsApi = {
   getStats: async (eventId: string): Promise<any> => {
     const response = await api.get(`/admin/events/${eventId}/reservations/stats`)
     return response.data
+  },
+
+  // 예약 신청 수락 (관리자 - 선정 방식)
+  approve: async (id: string): Promise<Reservation> => {
+    const response = await api.post<Reservation>(`/admin/reservations/${id}/approve`)
+    return (response.data as any).data || response.data
+  },
+
+  // 예약 신청 거절 (관리자 - 선정 방식)
+  reject: async (id: string): Promise<Reservation> => {
+    const response = await api.post<Reservation>(`/admin/reservations/${id}/reject`)
+    return (response.data as any).data || response.data
   },
 }

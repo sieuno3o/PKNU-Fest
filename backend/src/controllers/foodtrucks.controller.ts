@@ -20,7 +20,11 @@ export class FoodTrucksController {
         return res.status(401).json({ message: 'Unauthorized' })
       }
 
-      const foodTruck = await foodTrucksService.createFoodTruck(req.user.userId, req.body)
+      const ownerId = (req.user.role === 'ADMIN' && req.body.ownerId)
+        ? req.body.ownerId
+        : req.user.userId
+
+      const foodTruck = await foodTrucksService.createFoodTruck(ownerId, req.body)
       return ResponseUtil.created(res, foodTruck, 'Food truck created successfully')
     } catch (error) {
       next(error)

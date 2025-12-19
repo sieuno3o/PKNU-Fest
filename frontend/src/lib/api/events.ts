@@ -13,10 +13,14 @@ export interface Event {
   startTime: string
   endTime: string
   location: string
-  capacity: number
+  capacity: number | null
   currentReservations: number
+  reservationEnabled: boolean
+  reservationType: 'FIRST_COME' | 'SELECTION' | null
+  isStudentOnly: boolean
   image: string
   thumbnail?: string
+  images?: string[] // 설명 이미지 (최대 5장)
   tags: string[]
   requiresStudentVerification: boolean
   status: string
@@ -35,10 +39,14 @@ export interface CreateEventRequest {
   location: string
   latitude?: number
   longitude?: number
-  capacity: number
+  capacity?: number | null
   image?: string
+  images?: string[] // 설명 이미지
   tags?: string[]
   requiresStudentVerification?: boolean
+  reservationEnabled?: boolean
+  reservationType?: 'FIRST_COME' | 'SELECTION'
+  isStudentOnly?: boolean
 }
 
 export interface UpdateEventRequest extends Partial<CreateEventRequest> { }
@@ -61,8 +69,8 @@ export const eventsApi = {
 
   // 행사 상세 조회
   getById: async (id: string): Promise<Event> => {
-    const response = await api.get<Event>(`/events/${id}`)
-    return response.data
+    const response = await api.get<{ success: boolean; data: Event }>(`/events/${id}`)
+    return response.data.data || response.data as unknown as Event
   },
 
   // 행사 생성 (관리자)

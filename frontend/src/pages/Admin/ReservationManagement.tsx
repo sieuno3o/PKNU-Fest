@@ -22,9 +22,12 @@ export default function ReservationManagement() {
   const filteredReservations = reservations.filter((reservation) => {
     const matchesSearch =
       reservation.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reservation.eventName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reservation.userEmail?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = selectedStatus === 'all' || reservation.status === selectedStatus
+      reservation.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reservation.event?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reservation.userEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reservation.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reservation.user?.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = selectedStatus === 'all' || reservation.status?.toLowerCase() === selectedStatus
     return matchesSearch && matchesStatus
   })
 
@@ -39,8 +42,8 @@ export default function ReservationManagement() {
   const updateReservation = useUpdateReservation()
 
   // 예약 상태 변경
-  const handleStatusChange = (id: string, newStatus: Reservation['status']) => {
-    updateReservation.mutate({ id, data: { status: newStatus } })
+  const handleStatusChange = (id: string, newStatus: string) => {
+    updateReservation.mutate({ id, data: { status: newStatus as any } })
   }
 
   // 예약 상세보기

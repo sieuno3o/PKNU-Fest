@@ -1,4 +1,4 @@
-import { Calendar, User, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Calendar, User, Clock, CheckCircle, XCircle, AlertCircle, HelpCircle } from 'lucide-react'
 import type { Reservation } from '@/stores/reservationStore'
 
 interface ReservationCardProps {
@@ -7,7 +7,13 @@ interface ReservationCardProps {
     onStatusChange: (id: string, newStatus: Reservation['status']) => void
 }
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
+    // 소문자
+    pending: {
+        label: '대기',
+        color: 'bg-yellow-100 text-yellow-700',
+        icon: Clock,
+    },
     confirmed: {
         label: '확정',
         color: 'bg-blue-100 text-blue-700',
@@ -28,10 +34,67 @@ const statusConfig = {
         color: 'bg-gray-100 text-gray-700',
         icon: AlertCircle,
     },
+    rejected: {
+        label: '거절',
+        color: 'bg-red-100 text-red-700',
+        icon: XCircle,
+    },
+    // 대문자
+    PENDING: {
+        label: '대기',
+        color: 'bg-yellow-100 text-yellow-700',
+        icon: Clock,
+    },
+    CONFIRMED: {
+        label: '확정',
+        color: 'bg-blue-100 text-blue-700',
+        icon: CheckCircle,
+    },
+    CHECKED_IN: {
+        label: '체크인',
+        color: 'bg-green-100 text-green-700',
+        icon: CheckCircle,
+    },
+    CANCELLED: {
+        label: '취소',
+        color: 'bg-red-100 text-red-700',
+        icon: XCircle,
+    },
+    NO_SHOW: {
+        label: '노쇼',
+        color: 'bg-gray-100 text-gray-700',
+        icon: AlertCircle,
+    },
+    REJECTED: {
+        label: '거절',
+        color: 'bg-red-100 text-red-700',
+        icon: XCircle,
+    },
+}
+
+const defaultStatus = {
+    label: '알수없음',
+    color: 'bg-gray-100 text-gray-700',
+    icon: HelpCircle,
 }
 
 export default function ReservationCard({ reservation, onViewDetail, onStatusChange }: ReservationCardProps) {
-    const StatusIcon = statusConfig[reservation.status].icon
+    const statusInfo = statusConfig[reservation.status] || defaultStatus
+    const StatusIcon = statusInfo.icon
+
+    // 백엔드 필드 호환성
+    const userName = reservation.userName || reservation.user?.name || '사용자'
+    const userPhone = reservation.userPhone || reservation.user?.phone || ''
+    const eventName = reservation.eventName || reservation.event?.title || '행사'
+    const startTimeStr = reservation.event?.startTime
+    const eventDate = reservation.eventDate || (startTimeStr ? new Date(startTimeStr).toLocaleDateString() : '')
+    const eventTime = reservation.eventTime || (startTimeStr ? new Date(startTimeStr).toLocaleTimeString() : '')
+    const attendees = reservation.attendees || reservation.partySize || 1
+    const studentVerified = reservation.studentVerified ?? reservation.user?.isStudentVerified
+    const reservedAt = reservation.reservationDate || reservation.createdAt
+
+    // 상태 정규화 (대소문자 처리)
+    const normalizedStatus = reservation.status?.toLowerCase() || ''
 
     return (
         <div
@@ -41,20 +104,23 @@ export default function ReservationCard({ reservation, onViewDetail, onStatusCha
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-gray-900">{reservation.userName}</h3>
-                        {reservation.studentVerified && (
+                        <h3 className="font-bold text-gray-900">{userName}</h3>
+                        {studentVerified && (
                             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
                                 학생인증
                             </span>
                         )}
                     </div>
-                    <p className="text-sm text-gray-600">{reservation.eventName}</p>
+                    <p className="text-sm text-gray-600">{eventName}</p>
+                    {userPhone && (
+                        <p className="text-sm text-gray-500">📞 {userPhone}</p>
+                    )}
                 </div>
                 <span
-                    className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${statusConfig[reservation.status].color}`}
+                    className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${statusInfo.color}`}
                 >
                     <StatusIcon className="w-3 h-3" />
-                    {statusConfig[reservation.status].label}
+                    {statusInfo.label}
                 </span>
             </div>
 
@@ -62,25 +128,50 @@ export default function ReservationCard({ reservation, onViewDetail, onStatusCha
                 <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
                     <span>
-                        {reservation.eventDate} {reservation.eventTime}
+                        {eventDate} {eventTime}
                     </span>
                 </div>
                 <div className="flex items-center gap-1">
                     <User className="w-4 h-4" />
-                    <span>{reservation.attendees}명</span>
+                    <span>{attendees}명</span>
                 </div>
                 <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    <span>예약: {reservation.reservationDate ? new Date(reservation.reservationDate).toLocaleString() : '-'}</span>
+                    <span>예약: {reservedAt ? new Date(reservedAt).toLocaleString() : '-'}</span>
                 </div>
             </div>
 
-            {reservation.status === 'confirmed' && (
+            {/* PENDING 상태: 수락/거절 버튼 */}
+            {normalizedStatus === 'pending' && (
                 <div className="flex gap-2">
                     <button
                         onClick={(e) => {
                             e.stopPropagation()
-                            onStatusChange(reservation.id, 'checked-in')
+                            onStatusChange(reservation.id, 'CONFIRMED' as any)
+                        }}
+                        className="flex-1 py-2 px-4 bg-green-100 text-green-700 rounded-xl text-sm font-medium hover:bg-green-200 transition"
+                    >
+                        수락
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onStatusChange(reservation.id, 'REJECTED' as any)
+                        }}
+                        className="flex-1 py-2 px-4 bg-red-100 text-red-700 rounded-xl text-sm font-medium hover:bg-red-200 transition"
+                    >
+                        거절
+                    </button>
+                </div>
+            )}
+
+            {/* CONFIRMED 상태: 체크인/취소 버튼 */}
+            {normalizedStatus === 'confirmed' && (
+                <div className="flex gap-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onStatusChange(reservation.id, 'CHECKED_IN' as any)
                         }}
                         className="flex-1 py-2 px-4 bg-green-100 text-green-700 rounded-xl text-sm font-medium hover:bg-green-200 transition"
                     >
@@ -89,7 +180,7 @@ export default function ReservationCard({ reservation, onViewDetail, onStatusCha
                     <button
                         onClick={(e) => {
                             e.stopPropagation()
-                            onStatusChange(reservation.id, 'cancelled')
+                            onStatusChange(reservation.id, 'CANCELLED' as any)
                         }}
                         className="flex-1 py-2 px-4 bg-red-100 text-red-700 rounded-xl text-sm font-medium hover:bg-red-200 transition"
                     >

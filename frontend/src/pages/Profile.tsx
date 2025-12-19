@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { LogOut, Trash2, AlertTriangle } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { LogOut, Trash2, AlertTriangle, LogIn } from 'lucide-react'
 import { useAuth, useUpdateProfile, useChangePassword, useDeleteAccount, type UserRole } from '../hooks/useAuth'
 import { toast } from '@/components/ui/Toast'
 import ProfileHeader from '@/components/profile/ProfileHeader'
@@ -30,6 +30,33 @@ export default function Profile() {
   })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
+
+  // 로그인 안 한 경우 로그인 페이지로 안내
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LogIn className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">로그인이 필요합니다</h2>
+          <p className="text-gray-500 mb-6">프로필을 보려면 먼저 로그인해주세요.</p>
+          <Link
+            to="/login"
+            className="block w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+          >
+            로그인하기
+          </Link>
+          <Link
+            to="/"
+            className="block mt-3 text-gray-500 hover:text-gray-700"
+          >
+            홈으로 돌아가기
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   // 프로필 수정
   const handleSaveProfile = () => {

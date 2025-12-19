@@ -39,6 +39,9 @@ const io = new SocketIOServer(httpServer, {
 // Setup Socket.IO handlers
 setupSocketIO(io)
 
+  // Store io instance globally for use in services
+  ; (global as any).io = io
+
 const PORT = process.env.PORT || 3000
 
 // Middleware

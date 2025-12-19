@@ -7,17 +7,37 @@ export interface Reservation {
   userEmail?: string
   userPhone?: string
   eventId: string
-  eventName: string
-  eventDate: string
-  eventTime: string
+  eventName?: string
+  eventDate?: string
+  eventTime?: string
   eventLocation?: string
-  location: string
+  eventImage?: string
+  location?: string
   reservationDate?: string
-  attendees: number
-  status: 'confirmed' | 'cancelled' | 'checked-in' | 'no-show'
+  attendees?: number
+  partySize?: number
+  status: string
   studentVerified?: boolean
   qrCode?: string
-  createdAt: string
+  createdAt?: string
+  // 백엔드 관계 객체
+  user?: {
+    id: string
+    name: string
+    email: string
+    phone?: string
+    isStudentVerified?: boolean
+  }
+  event?: {
+    id: string
+    title: string
+    description?: string
+    startTime?: string
+    endTime?: string
+    location?: string
+    thumbnail?: string
+    image?: string
+  }
 }
 
 interface ReservationState {

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { Bell, User, ShoppingCart } from 'lucide-react'
+import { User, ShoppingCart } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import NotificationBell from '@/components/ui/NotificationBell'
 
 export default function Header() {
   const [cartCount, setCartCount] = useState(0)
@@ -56,11 +57,7 @@ export default function Header() {
           </Link>
 
           {/* 알림 */}
-          <button className="relative p-2 hover:bg-gray-100 rounded-full transition">
-            <Bell className="w-5 h-5 text-gray-700" />
-            {/* 알림 뱃지 (알림 있을 때) */}
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          <NotificationBell />
 
           {/* 프로필 */}
           <Link
@@ -74,3 +71,4 @@ export default function Header() {
     </header>
   )
 }
+

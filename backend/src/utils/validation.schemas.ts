@@ -61,6 +61,8 @@ export const createEventSchema = z.object({
   images: z.array(z.string()).max(5, 'Maximum 5 images allowed').optional(),
   isStudentOnly: z.boolean().optional().default(false),
   capacity: z.number().int().positive().nullable().optional(),
+  reservationEnabled: z.boolean().optional().default(false),
+  reservationType: z.enum(['FIRST_COME', 'SELECTION']).nullable().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'FULL', 'ONGOING', 'ENDED']).optional(),
   organizer: z.string().optional(),
 })

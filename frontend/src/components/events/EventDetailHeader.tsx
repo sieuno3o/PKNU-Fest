@@ -69,9 +69,9 @@ export default function EventDetailHeader({
                 </div>
 
                 <div className="pb-6">
-                    {event.image ? (
+                    {(event.image || event.thumbnail) ? (
                         <img
-                            src={event.image}
+                            src={event.image || event.thumbnail}
                             alt={event.title}
                             className="w-full h-48 object-cover rounded-2xl mb-4"
                         />

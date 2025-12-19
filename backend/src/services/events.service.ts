@@ -24,6 +24,8 @@ export class EventsService {
         images: data.images || [],
         isStudentOnly: data.isStudentOnly || false,
         capacity: data.capacity,
+        reservationEnabled: data.reservationEnabled || false,
+        reservationType: data.reservationType || null,
         status: data.status || 'DRAFT',
         organizer: data.organizer,
         startTime: startDateTime,
@@ -137,11 +139,36 @@ export class EventsService {
       throw new NotFoundError('Event not found')
     }
 
+    // 날짜/시간 변환 처리
+    const updateData: any = {}
+
+    if (data.title !== undefined) updateData.title = data.title
+    if (data.description !== undefined) updateData.description = data.description
+    if (data.category !== undefined) updateData.category = data.category
+    if (data.location !== undefined) updateData.location = data.location
+    if (data.latitude !== undefined) updateData.latitude = data.latitude
+    if (data.longitude !== undefined) updateData.longitude = data.longitude
+    if (data.thumbnail !== undefined) updateData.thumbnail = data.thumbnail
+    if (data.image !== undefined) updateData.thumbnail = data.image
+    if (data.images !== undefined) updateData.images = data.images
+    if (data.isStudentOnly !== undefined) updateData.isStudentOnly = data.isStudentOnly
+    if (data.capacity !== undefined) updateData.capacity = data.capacity
+    if (data.reservationEnabled !== undefined) updateData.reservationEnabled = data.reservationEnabled
+    if (data.reservationType !== undefined) updateData.reservationType = data.reservationType
+    if (data.status !== undefined) updateData.status = data.status
+    if (data.organizer !== undefined) updateData.organizer = data.organizer
+
+    // 날짜와 시간이 모두 있으면 DateTime으로 변환
+    if (data.date && data.startTime) {
+      updateData.startTime = new Date(`${data.date}T${data.startTime}:00`)
+    }
+    if (data.date && data.endTime) {
+      updateData.endTime = new Date(`${data.date}T${data.endTime}:00`)
+    }
+
     const updatedEvent = await prisma.event.update({
       where: { id },
-      data: {
-        ...data,
-      },
+      data: updateData,
     })
 
     return updatedEvent

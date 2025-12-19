@@ -1,4 +1,4 @@
-import { XCircle, Mail } from 'lucide-react'
+import { XCircle, Mail, Clock } from 'lucide-react'
 import type { Reservation } from '@/stores/reservationStore'
 
 interface ReservationDetailModalProps {
@@ -8,24 +8,24 @@ interface ReservationDetailModalProps {
   onStatusChange: (id: string, newStatus: Reservation['status']) => void
 }
 
-const statusConfig = {
-  confirmed: {
-    label: '확정',
-    color: 'bg-blue-100 text-blue-700',
-  },
-  'checked-in': {
-    label: '체크인',
-    color: 'bg-green-100 text-green-700',
-  },
-  cancelled: {
-    label: '취소',
-    color: 'bg-red-100 text-red-700',
-  },
-  'no-show': {
-    label: '노쇼',
-    color: 'bg-gray-100 text-gray-700',
-  },
+const statusConfig: Record<string, { label: string; color: string }> = {
+  // 소문자
+  pending: { label: '대기', color: 'bg-yellow-100 text-yellow-700' },
+  confirmed: { label: '확정', color: 'bg-blue-100 text-blue-700' },
+  'checked-in': { label: '체크인', color: 'bg-green-100 text-green-700' },
+  cancelled: { label: '취소', color: 'bg-red-100 text-red-700' },
+  'no-show': { label: '노쇼', color: 'bg-gray-100 text-gray-700' },
+  rejected: { label: '거절', color: 'bg-red-100 text-red-700' },
+  // 대문자
+  PENDING: { label: '대기', color: 'bg-yellow-100 text-yellow-700' },
+  CONFIRMED: { label: '확정', color: 'bg-blue-100 text-blue-700' },
+  CHECKED_IN: { label: '체크인', color: 'bg-green-100 text-green-700' },
+  CANCELLED: { label: '취소', color: 'bg-red-100 text-red-700' },
+  NO_SHOW: { label: '노쇼', color: 'bg-gray-100 text-gray-700' },
+  REJECTED: { label: '거절', color: 'bg-red-100 text-red-700' },
 }
+
+const defaultStatus = { label: '알수없음', color: 'bg-gray-100 text-gray-700' }
 
 export default function ReservationDetailModal({
   isOpen,
@@ -34,6 +34,21 @@ export default function ReservationDetailModal({
   onStatusChange,
 }: ReservationDetailModalProps) {
   if (!isOpen || !reservation) return null
+
+  // 백엔드 필드 호환성
+  const userName = reservation.userName || reservation.user?.name || '사용자'
+  const userEmail = reservation.userEmail || reservation.user?.email || '-'
+  const userPhone = reservation.userPhone || reservation.user?.phone || '-'
+  const studentVerified = reservation.studentVerified ?? reservation.user?.isStudentVerified
+  const eventName = reservation.eventName || reservation.event?.title || '행사'
+  const eventDate = reservation.eventDate || (reservation.event?.startTime ? new Date(reservation.event.startTime).toLocaleDateString() : '-')
+  const eventTime = reservation.eventTime || (reservation.event?.startTime ? new Date(reservation.event.startTime).toLocaleTimeString() : '')
+  const eventLocation = reservation.eventLocation || reservation.event?.location || '-'
+  const attendees = reservation.attendees || reservation.partySize || 1
+  const reservationDate = reservation.reservationDate || reservation.createdAt
+
+  const statusInfo = statusConfig[reservation.status] || defaultStatus
+  const normalizedStatus = reservation.status?.toLowerCase() || ''
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end z-50">
@@ -57,20 +72,20 @@ export default function ReservationDetailModal({
             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">이름</span>
-                <span className="text-sm font-medium">{reservation.userName}</span>
+                <span className="text-sm font-medium">{userName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">이메일</span>
-                <span className="text-sm font-medium">{reservation.userEmail}</span>
+                <span className="text-sm font-medium">{userEmail}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">전화번호</span>
-                <span className="text-sm font-medium">{reservation.userPhone}</span>
+                <span className="text-sm font-medium">{userPhone}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">학생 인증</span>
                 <span className="text-sm font-medium">
-                  {reservation.studentVerified ? '✓ 완료' : '✗ 미완료'}
+                  {studentVerified ? '✓ 완료' : '✗ 미완료'}
                 </span>
               </div>
             </div>
@@ -82,23 +97,23 @@ export default function ReservationDetailModal({
             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">행사명</span>
-                <span className="text-sm font-medium">{reservation.eventName}</span>
+                <span className="text-sm font-medium">{eventName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">날짜/시간</span>
                 <span className="text-sm font-medium">
-                  {reservation.eventDate} {reservation.eventTime}
+                  {eventDate} {eventTime}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">장소</span>
                 <span className="text-sm font-medium">
-                  {reservation.eventLocation}
+                  {eventLocation}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">인원</span>
-                <span className="text-sm font-medium">{reservation.attendees}명</span>
+                <span className="text-sm font-medium">{attendees}명</span>
               </div>
             </div>
           </div>
@@ -114,26 +129,50 @@ export default function ReservationDetailModal({
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">예약일시</span>
                 <span className="text-sm font-medium">
-                  {reservation.reservationDate ? new Date(reservation.reservationDate).toLocaleString() : '-'}
+                  {reservationDate ? new Date(reservationDate).toLocaleString() : '-'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">상태</span>
                 <span
-                  className={`text-sm font-bold px-2 py-1 rounded-full ${statusConfig[reservation.status].color}`}
+                  className={`text-sm font-bold px-2 py-1 rounded-full ${statusInfo.color}`}
                 >
-                  {statusConfig[reservation.status].label}
+                  {statusInfo.label}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 액션 버튼 */}
-          {reservation.status === 'confirmed' && (
+          {/* PENDING 상태: 수락/거절 버튼 */}
+          {normalizedStatus === 'pending' && (
             <div className="space-y-2">
               <button
                 onClick={() => {
-                  onStatusChange(reservation.id, 'checked-in')
+                  onStatusChange(reservation.id, 'CONFIRMED' as any)
+                  onClose()
+                }}
+                className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition"
+              >
+                신청 수락
+              </button>
+              <button
+                onClick={() => {
+                  onStatusChange(reservation.id, 'REJECTED' as any)
+                  onClose()
+                }}
+                className="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition"
+              >
+                신청 거절
+              </button>
+            </div>
+          )}
+
+          {/* CONFIRMED 상태: 체크인/취소 버튼 */}
+          {normalizedStatus === 'confirmed' && (
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  onStatusChange(reservation.id, 'CHECKED_IN' as any)
                   onClose()
                 }}
                 className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition"
@@ -142,7 +181,7 @@ export default function ReservationDetailModal({
               </button>
               <button
                 onClick={() => {
-                  onStatusChange(reservation.id, 'cancelled')
+                  onStatusChange(reservation.id, 'CANCELLED' as any)
                   onClose()
                 }}
                 className="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition"

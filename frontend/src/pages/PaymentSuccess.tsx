@@ -50,7 +50,7 @@ export default function PaymentSuccess() {
             <div className="flex justify-between">
               <span className="text-gray-600">결제 금액</span>
               <span className="font-bold text-orange-600">
-                {order?.totalAmount?.toLocaleString()}원
+                {(order?.totalPrice || order?.totalAmount || 0).toLocaleString()}원
               </span>
             </div>
             <div className="flex justify-between">

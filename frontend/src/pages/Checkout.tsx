@@ -15,7 +15,7 @@ export default function Checkout() {
 
   const processPaymentMutation = useProcessPayment()
 
-  if (!orderId) {
+  if (!orderId || orderId === 'undefined' || orderId === 'null') {
     navigate('/cart')
     return null
   }
@@ -91,17 +91,15 @@ export default function Checkout() {
               <button
                 key={method.id}
                 onClick={() => setSelectedMethod(method.id)}
-                className={`w-full p-4 rounded-xl border-2 transition flex items-center justify-between ${
-                  selectedMethod === method.id
+                className={`w-full p-4 rounded-xl border-2 transition flex items-center justify-between ${selectedMethod === method.id
                     ? 'border-orange-600 bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <method.icon
-                    className={`w-6 h-6 ${
-                      selectedMethod === method.id ? 'text-orange-600' : 'text-gray-400'
-                    }`}
+                    className={`w-6 h-6 ${selectedMethod === method.id ? 'text-orange-600' : 'text-gray-400'
+                      }`}
                   />
                   <div className="text-left">
                     <div className="font-semibold">{method.name}</div>
@@ -129,11 +127,10 @@ export default function Checkout() {
           <button
             onClick={handlePayment}
             disabled={!selectedMethod || isProcessing}
-            className={`w-full py-4 rounded-xl font-bold text-white transition ${
-              !selectedMethod || isProcessing
+            className={`w-full py-4 rounded-xl font-bold text-white transition ${!selectedMethod || isProcessing
                 ? 'bg-gray-300 cursor-not-allowed'
                 : 'bg-orange-600 hover:bg-orange-700'
-            }`}
+              }`}
           >
             {isProcessing ? '결제 처리 중...' : `${totalAmount.toLocaleString()}원 결제하기`}
           </button>

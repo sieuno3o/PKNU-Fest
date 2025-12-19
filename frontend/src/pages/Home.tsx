@@ -4,6 +4,7 @@ import HeroBanner from '@/components/home/HeroBanner'
 import QuickLinks from '@/components/home/QuickLinks'
 import OngoingEvents from '@/components/home/OngoingEvents'
 import MyReservations from '@/components/home/MyReservations'
+import PopularFoodTrucks from '@/components/home/PopularFoodTrucks'
 import Notices from '@/components/home/Notices'
 
 export default function Home() {
@@ -22,6 +23,7 @@ export default function Home() {
       <QuickLinks />
       <OngoingEvents />
       <MyReservations isLoggedIn={isLoggedIn} />
+      <PopularFoodTrucks />
       <Notices />
     </div>
   )

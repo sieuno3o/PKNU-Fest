@@ -66,13 +66,15 @@ export const foodTrucksApi = {
   // 푸드트럭 상세 조회
   getById: async (id: string): Promise<FoodTruck> => {
     const response = await api.get<FoodTruck>(`/foodtrucks/${id}`)
-    return response.data
+    // Handle wrapped response { success: true, data: {...} }
+    const data = (response.data as any).data || response.data
+    return data
   },
 
   // 푸드트럭 메뉴 조회
   getMenu: async (truckId: string): Promise<Menu[]> => {
     const response = await api.get<Menu[]>(`/foodtrucks/${truckId}/menu`)
-    return response.data
+    return Array.isArray(response.data) ? response.data : (response.data as any).data || []
   },
 
   // 메뉴 아이템 상세 조회
@@ -86,14 +88,14 @@ export const foodTrucksApi = {
 export const menuApi = {
   // 메뉴 생성
   create: async (truckId: string, data: CreateMenuRequest): Promise<Menu> => {
-    const response = await api.post<Menu>(`/vendor/food-trucks/${truckId}/menu`, data)
+    const response = await api.post<Menu>(`/foodtrucks/${truckId}/menu`, data)
     return response.data
   },
 
   // 메뉴 수정
   update: async (truckId: string, menuId: string, data: UpdateMenuRequest): Promise<Menu> => {
-    const response = await api.patch<Menu>(
-      `/vendor/food-trucks/${truckId}/menu/${menuId}`,
+    const response = await api.put<Menu>(
+      `/foodtrucks/menu/${menuId}`,
       data
     )
     return response.data
@@ -101,13 +103,13 @@ export const menuApi = {
 
   // 메뉴 삭제
   delete: async (truckId: string, menuId: string): Promise<void> => {
-    await api.delete(`/vendor/food-trucks/${truckId}/menu/${menuId}`)
+    await api.delete(`/foodtrucks/menu/${menuId}`)
   },
 
   // 메뉴 재고 업데이트
   updateStock: async (truckId: string, menuId: string, stock: number): Promise<Menu> => {
-    const response = await api.patch<Menu>(
-      `/vendor/food-trucks/${truckId}/menu/${menuId}/stock`,
+    const response = await api.put<Menu>(
+      `/foodtrucks/menu/${menuId}`,
       { stock }
     )
     return response.data
@@ -119,9 +121,9 @@ export const menuApi = {
     menuId: string,
     isAvailable: boolean
   ): Promise<Menu> => {
-    const response = await api.patch<Menu>(
-      `/vendor/food-trucks/${truckId}/menu/${menuId}/availability`,
-      { isAvailable }
+    const response = await api.put<Menu>(
+      `/foodtrucks/menu/${menuId}`,
+      { available: isAvailable }
     )
     return response.data
   },

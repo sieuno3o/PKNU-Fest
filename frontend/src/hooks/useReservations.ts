@@ -32,22 +32,40 @@ export function useCreateReservation() {
     mutationFn: (data: CreateReservationRequest) => reservationsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
-      toast.success('예약이 완료되었습니다')
+      queryClient.invalidateQueries({ queryKey: ['events'] })
     },
   })
 }
 
-// 예약 수정
+// 예약 상태 변경 (관리자용 통합 훅)
 export function useUpdateReservation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateReservationRequest }) =>
-      reservationsApi.update(id, data),
-    onSuccess: (_, variables) => {
+    mutationFn: async ({ id, data }: { id: string; data: UpdateReservationRequest }) => {
+      const status = data.status?.toUpperCase()
+
+      // 상태에 따라 적절한 API 호출
+      if (status === 'CONFIRMED') {
+        return reservationsApi.approve(id)
+      } else if (status === 'REJECTED') {
+        return reservationsApi.reject(id)
+      } else if (status === 'CHECKED_IN' || status === 'CHECKED-IN') {
+        return reservationsApi.checkIn(id)
+      } else if (status === 'CANCELLED') {
+        return reservationsApi.cancel(id)
+      }
+
+      throw new Error(`Unsupported status: ${data.status}`)
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
-      queryClient.invalidateQueries({ queryKey: ['reservations', variables.id] })
-      toast.success('예약이 수정되었습니다')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['events'] })
+      toast.success('상태가 변경되었습니다')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || '상태 변경에 실패했습니다')
     },
   })
 }
@@ -60,7 +78,7 @@ export function useCancelReservation() {
     mutationFn: (id: string) => reservationsApi.cancel(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
-      toast.success('예약이 취소되었습니다')
+      queryClient.invalidateQueries({ queryKey: ['events'] })
     },
   })
 }
@@ -74,6 +92,41 @@ export function useCheckInReservation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       toast.success('체크인이 완료되었습니다')
+    },
+  })
+}
+
+// 예약 신청 수락 (관리자 - 선정 방식)
+export function useApproveReservation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => reservationsApi.approve(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['events'] })
+      toast.success('신청이 수락되었습니다')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || '수락에 실패했습니다')
+    },
+  })
+}
+
+// 예약 신청 거절 (관리자 - 선정 방식)
+export function useRejectReservation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => reservationsApi.reject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'reservations'] })
+      toast.success('신청이 거절되었습니다')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || '거절에 실패했습니다')
     },
   })
 }
@@ -103,3 +156,4 @@ export function useReservationStats(eventId: string) {
     enabled: !!eventId,
   })
 }
+

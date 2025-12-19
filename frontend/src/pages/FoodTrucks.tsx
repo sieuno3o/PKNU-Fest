@@ -58,8 +58,8 @@ export default function FoodTrucks() {
               key={category}
               onClick={() => setSelectedCategory(category)}
               className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition ${selectedCategory === category
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                ? 'bg-orange-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
             >
               {category}
@@ -113,7 +113,7 @@ export default function FoodTrucks() {
                       alt={truck.name}
                       className="w-24 h-24 object-cover rounded-xl"
                     />
-                    {truck.isOpen && (
+                    {/* {truck.isOpen && (
                       <div className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
                         운영중
                       </div>
@@ -122,7 +122,7 @@ export default function FoodTrucks() {
                       <div className="absolute top-2 left-2 px-2 py-1 bg-gray-500 text-white text-xs font-bold rounded-full">
                         종료
                       </div>
-                    )}
+                    )} */}
                   </div>
 
                   {/* 정보 */}

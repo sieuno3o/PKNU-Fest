@@ -55,6 +55,9 @@ model Event {
   images        String[] // 상세 이미지 (최대 5장)
   isStudentOnly Boolean     @default(false) // 학생 전용 여부
   capacity      Int? // 인원 제한 (null이면 제한 없음)
+  reservationEnabled Boolean @default(false) // 예약/신청 활성화
+  reservationType    ReservationType? // 예약 방식
+  currentReservations Int @default(0) // 현재 예약 인원
   status        EventStatus @default(DRAFT)
   organizer     String? // 주최 단체
   createdAt     DateTime    @default(now())
@@ -73,6 +76,11 @@ enum EventStatus {
   FULL      // 예약 마감 (정원 도달)
   ONGOING   // 진행 중
   ENDED     // 종료
+}
+
+enum ReservationType {
+  FIRST_COME // 선착순
+  SELECTION  // 선정
 }
 
 // TimeSlot model - 시간대별 예약
@@ -115,10 +123,12 @@ model Reservation {
 }
 
 enum ReservationStatus {
+  PENDING    // 대기 (선정 방식)
   CONFIRMED  // 확정
   CHECKED_IN // 체크인 완료
   NO_SHOW    // 노쇼
   CANCELLED  // 취소
+  REJECTED   // 거절 (선정 방식)
 }
 
 // FoodTruck model - 푸드트럭
@@ -215,3 +225,19 @@ model OrderItem {
 
   @@map("order_items")
 }
+
+// BoothZone model - 부스 구역 (지도 표시용)
+model BoothZone {
+  id        String   @id @default(uuid())
+  name      String   // 구역 이름 (예: 공연, 부스, 푸드트럭)
+  color     String   // 색상 코드 (예: #C4B5FD)
+  icon      String   // 이모지 아이콘 (예: 🎵)
+  bounds    Json     // 폴리곤 좌표 배열 [{lat, lng}, ...]
+  centerLat Float    // 중심점 위도
+  centerLng Float    // 중심점 경도
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("booth_zones")
+}
+

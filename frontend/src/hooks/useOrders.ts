@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ordersApi, vendorOrdersApi } from '@/lib/api/orders'
 import type {
@@ -7,6 +8,7 @@ import type {
 } from '@/lib/api/orders'
 import type { ProcessPaymentData } from '@/types'
 import { toast } from '@/components/ui/Toast'
+import { getSocket, connectSocket } from '@/lib/socket'
 
 // 내 주문 목록 조회
 export function useMyOrders() {
@@ -51,13 +53,38 @@ export function useCancelOrder() {
   })
 }
 
-// 푸드트럭 주문 목록 조회 (운영자)
+// 푸드트럭 주문 목록 조회 (운영자) - 소켓 실시간 업데이트 포함
 export function useVendorOrders(truckId: string, filters?: OrderFilters) {
+  const queryClient = useQueryClient()
+
+  // 소켓 이벤트로 캐시 무효화
+  useEffect(() => {
+    if (!truckId) return
+
+    const socket = getSocket()
+    connectSocket()
+
+    // 푸드트럭 룸 참가
+    socket.emit('join:foodtruck', truckId)
+
+    const handleOrderUpdate = () => {
+      console.log('📦 Order updated via socket, refreshing...')
+      queryClient.invalidateQueries({ queryKey: ['vendor', 'food-trucks', truckId, 'orders'] })
+    }
+
+    socket.on('order:updated', handleOrderUpdate)
+
+    return () => {
+      socket.off('order:updated', handleOrderUpdate)
+      socket.emit('leave:foodtruck', truckId)
+    }
+  }, [truckId, queryClient])
+
   return useQuery({
     queryKey: ['vendor', 'food-trucks', truckId, 'orders', filters],
     queryFn: () => vendorOrdersApi.getAll(truckId, filters),
     enabled: !!truckId,
-    refetchInterval: 30000, // 30초마다 자동 새로고침
+    refetchInterval: 30000, // 소켓 실패 시 폴백으로 30초마다 자동 새로고침
   })
 }
 

@@ -15,6 +15,11 @@ export class ReservationsService {
       throw new NotFoundError('Event not found')
     }
 
+    // Check if reservation is enabled
+    if (!event.reservationEnabled) {
+      throw new BadRequestError('Reservations are not enabled for this event')
+    }
+
     // Check if event is student-only
     if (event.isStudentOnly) {
       const user = await prisma.user.findUnique({ where: { id: userId } })
@@ -28,12 +33,18 @@ export class ReservationsService {
       }
     }
 
-    // Check event capacity if no time slot and capacity is set
-    if (!data.timeSlotId && event.capacity !== null) {
+    // Check event capacity
+    if (event.capacity !== null) {
+      // For FIRST_COME, only count CONFIRMED reservations
+      // For SELECTION, count both PENDING and CONFIRMED
+      const statusFilter: ('PENDING' | 'CONFIRMED' | 'CHECKED_IN')[] = event.reservationType === 'FIRST_COME'
+        ? ['CONFIRMED', 'CHECKED_IN']
+        : ['PENDING', 'CONFIRMED', 'CHECKED_IN']
+
       const reservationCount = await prisma.reservation.count({
         where: {
           eventId: data.eventId,
-          status: { in: ['CONFIRMED', 'CHECKED_IN'] },
+          status: { in: statusFilter },
         },
       })
 
@@ -68,7 +79,7 @@ export class ReservationsService {
       where: {
         userId,
         eventId: data.eventId,
-        status: { in: ['CONFIRMED', 'CHECKED_IN'] },
+        status: { in: ['PENDING', 'CONFIRMED', 'CHECKED_IN'] },
       },
     })
 
@@ -82,6 +93,11 @@ export class ReservationsService {
     // Generate QR code string (we'll generate the actual QR image on-demand)
     const qrCodeString = `RES-${reservationId}`
 
+    // Determine reservation status based on reservation type
+    // FIRST_COME: 선착순 → 즉시 확정 (CONFIRMED)
+    // SELECTION: 선정 → 대기 상태 (PENDING)
+    const reservationStatus = event.reservationType === 'SELECTION' ? 'PENDING' : 'CONFIRMED'
+
     // Create reservation with QR code
     const reservation = await prisma.reservation.create({
       data: {
@@ -90,7 +106,7 @@ export class ReservationsService {
         eventId: data.eventId,
         timeSlotId: data.timeSlotId,
         partySize: data.partySize,
-        status: 'CONFIRMED',
+        status: reservationStatus,
         qrCode: qrCodeString,
       },
       include: {
@@ -98,6 +114,14 @@ export class ReservationsService {
         timeSlot: true,
       },
     })
+
+    // Update event's current reservation count (only for CONFIRMED)
+    if (reservationStatus === 'CONFIRMED') {
+      await prisma.event.update({
+        where: { id: data.eventId },
+        data: { currentReservations: { increment: 1 } },
+      })
+    }
 
     // Emit Socket.IO event
     emitReservationUpdate(io, data.eventId, {
@@ -127,7 +151,7 @@ export class ReservationsService {
     return reservations
   }
 
-  async getReservation(userId: string, id: string) {
+  async getReservation(userId: string, id: string, isAdmin: boolean = false) {
     const reservation = await prisma.reservation.findUnique({
       where: { id },
       include: {
@@ -138,6 +162,8 @@ export class ReservationsService {
             id: true,
             name: true,
             email: true,
+            phone: true,
+            isStudentVerified: true,
           },
         },
       },
@@ -147,7 +173,8 @@ export class ReservationsService {
       throw new NotFoundError('Reservation not found')
     }
 
-    if (reservation.userId !== userId) {
+    // 관리자는 모든 예약 조회 가능
+    if (!isAdmin && reservation.userId !== userId) {
       throw new ForbiddenError('You do not have access to this reservation')
     }
 
@@ -173,6 +200,9 @@ export class ReservationsService {
       throw new BadRequestError('Cannot cancel a checked-in reservation')
     }
 
+    // Decrement count if was CONFIRMED
+    const wasConfirmed = reservation.status === 'CONFIRMED'
+
     const updatedReservation = await prisma.reservation.update({
       where: { id },
       data: { status: 'CANCELLED' },
@@ -181,6 +211,14 @@ export class ReservationsService {
         timeSlot: true,
       },
     })
+
+    // Update event's current reservation count
+    if (wasConfirmed) {
+      await prisma.event.update({
+        where: { id: reservation.eventId },
+        data: { currentReservations: { decrement: 1 } },
+      })
+    }
 
     // Emit Socket.IO event
     emitReservationUpdate(io, reservation.eventId, {
@@ -201,8 +239,12 @@ export class ReservationsService {
       throw new NotFoundError('Reservation not found')
     }
 
-    if (reservation.status === 'CANCELLED') {
-      throw new BadRequestError('Cannot check in a cancelled reservation')
+    if (reservation.status === 'CANCELLED' || reservation.status === 'REJECTED') {
+      throw new BadRequestError('Cannot check in a cancelled or rejected reservation')
+    }
+
+    if (reservation.status === 'PENDING') {
+      throw new BadRequestError('Cannot check in a pending reservation. It must be approved first.')
     }
 
     if (reservation.status === 'CHECKED_IN') {
@@ -234,5 +276,134 @@ export class ReservationsService {
     })
 
     return updatedReservation
+  }
+
+  // 관리자 전용: 예약 신청 수락 (선정 방식)
+  async approveReservation(reservationId: string) {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { event: true },
+    })
+
+    if (!reservation) {
+      throw new NotFoundError('Reservation not found')
+    }
+
+    if (reservation.status !== 'PENDING') {
+      throw new BadRequestError('Only pending reservations can be approved')
+    }
+
+    // Check capacity before approving
+    const event = reservation.event
+    if (event.capacity !== null) {
+      const confirmedCount = await prisma.reservation.count({
+        where: {
+          eventId: event.id,
+          status: { in: ['CONFIRMED', 'CHECKED_IN'] },
+        },
+      })
+
+      if (confirmedCount >= event.capacity) {
+        throw new BadRequestError('Event is fully booked. Cannot approve more reservations.')
+      }
+    }
+
+    const updatedReservation = await prisma.reservation.update({
+      where: { id: reservationId },
+      data: { status: 'CONFIRMED' },
+      include: {
+        event: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    // Update event's current reservation count
+    await prisma.event.update({
+      where: { id: reservation.eventId },
+      data: { currentReservations: { increment: 1 } },
+    })
+
+    // Emit Socket.IO event
+    emitReservationUpdate(io, reservation.eventId, {
+      type: 'approved',
+      reservation: updatedReservation,
+    })
+
+    return updatedReservation
+  }
+
+  // 관리자 전용: 예약 신청 거절 (선정 방식)
+  async rejectReservation(reservationId: string) {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { event: true },
+    })
+
+    if (!reservation) {
+      throw new NotFoundError('Reservation not found')
+    }
+
+    if (reservation.status !== 'PENDING') {
+      throw new BadRequestError('Only pending reservations can be rejected')
+    }
+
+    const updatedReservation = await prisma.reservation.update({
+      where: { id: reservationId },
+      data: { status: 'REJECTED' },
+      include: {
+        event: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    // Emit Socket.IO event
+    emitReservationUpdate(io, reservation.eventId, {
+      type: 'rejected',
+      reservation: updatedReservation,
+    })
+
+    return updatedReservation
+  }
+
+  // 이벤트별 예약 목록 조회 (관리자용)
+  async getEventReservations(eventId: string, filters?: { status?: string }) {
+    const where: any = { eventId }
+
+    if (filters?.status) {
+      where.status = filters.status
+    }
+
+    const reservations = await prisma.reservation.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            isStudentVerified: true,
+            studentId: true,
+            department: true,
+          },
+        },
+        timeSlot: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    return reservations
   }
 }

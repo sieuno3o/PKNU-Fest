@@ -52,9 +52,19 @@ export default function Cart() {
     setIsOrdering(true)
     try {
       const order = await createOrderMutation.mutateAsync({
-        truckId: firstTruckId,
-        items: cart.map((item) => ({ menuId: item.menuId, quantity: item.quantity })),
+        foodTruckId: firstTruckId,
+        items: cart.map((item) => ({ menuItemId: item.menuId, quantity: item.quantity })),
       })
+      console.log('Order created:', order) // Debug log
+      if (!order?.id) {
+        console.error('Order ID is undefined. Full order object:', order)
+        alert('주문 생성 중 오류가 발생했습니다. 다시 시도해주세요.')
+        setIsOrdering(false)
+        return
+      }
+      // Clear cart after successful order
+      localStorage.removeItem('cart')
+      window.dispatchEvent(new Event('cartUpdated'))
       navigate(`/checkout?orderId=${order.id}&amount=${totalAmount}`)
     } catch (error) {
       console.error('Order creation failed:', error)

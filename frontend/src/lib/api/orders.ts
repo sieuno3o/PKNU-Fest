@@ -19,21 +19,25 @@ export interface Order {
   userId: string
   userName?: string
   userPhone?: string
-  truckId: string
-  truckName: string
+  truckId?: string
+  foodTruckId?: string
+  truckName?: string
   foodTruck?: {
     id: string
     name: string
     image?: string
+    location?: string
   }
-  items: OrderItem[]
-  totalAmount: number
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+  items?: OrderItem[]
+  orderItems?: OrderItem[]  // Backend uses this name
+  totalAmount?: number
+  totalPrice?: number  // Backend uses this name
+  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'PENDING' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED'
   paymentId?: string
   paymentMethod?: string
   paymentStatus?: 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED'
   paidAt?: string
-  orderTime: string
+  orderTime?: string
   pickupTime?: string
   notes?: string
   createdAt: string
@@ -41,9 +45,9 @@ export interface Order {
 }
 
 export interface CreateOrderRequest {
-  truckId: string
+  foodTruckId: string
   items: {
-    menuId: string
+    menuItemId: string
     quantity: number
   }[]
   notes?: string
@@ -72,13 +76,15 @@ export const ordersApi = {
   // 주문 상세 조회
   getById: async (id: string): Promise<Order> => {
     const response = await api.get<Order>(`/orders/${id}`)
-    return response.data
+    // Handle wrapped response { success: true, data: {...} }
+    return (response.data as any).data || response.data
   },
 
   // 주문 생성
   create: async (data: CreateOrderRequest): Promise<Order> => {
     const response = await api.post<Order>('/orders', data)
-    return response.data
+    // Handle wrapped response { success: true, data: {...} }
+    return (response.data as any).data || response.data
   },
 
   // 주문 취소 (대기중일 때만)
@@ -103,24 +109,25 @@ export const ordersApi = {
 // 주문 관리 API (운영자용)
 export const vendorOrdersApi = {
   // 푸드트럭 주문 목록 조회
-  getAll: async (truckId: string, filters?: OrderFilters): Promise<Order[]> => {
-    const response = await api.get<Order[]>(`/vendor/food-trucks/${truckId}/orders`, {
+  getAll: async (_truckId: string, filters?: OrderFilters): Promise<Order[]> => {
+    const response = await api.get<Order[]>(`/vendor/orders`, {
       params: filters,
     })
-    return response.data
+    return Array.isArray(response.data) ? response.data : (response.data as any).data || []
   },
 
   // 주문 상태 업데이트
   updateStatus: async (
-    truckId: string,
+    _truckId: string,
     orderId: string,
     data: UpdateOrderStatusRequest
   ): Promise<Order> => {
     const response = await api.patch<Order>(
-      `/vendor/food-trucks/${truckId}/orders/${orderId}/status`,
+      `/orders/${orderId}/status`,
       data
     )
-    return response.data
+    // Handle wrapped response
+    return (response.data as any).data || response.data
   },
 
   // 주문 통계 조회

@@ -6,6 +6,7 @@ import foodTrucksRoutes from './foodtrucks.routes'
 import ordersRoutes from './orders.routes'
 import adminRoutes from './admin.routes'
 import vendorRoutes from './vendor.routes'
+import boothZoneRoutes from './boothZone.routes'
 
 const router = Router()
 
@@ -17,6 +18,7 @@ router.use('/foodtrucks', foodTrucksRoutes)
 router.use('/orders', ordersRoutes)
 router.use('/admin', adminRoutes)
 router.use('/vendor', vendorRoutes)
+router.use('/booth-zones', boothZoneRoutes)
 
 // Health check
 router.get('/health', (req, res) => {
@@ -24,3 +26,4 @@ router.get('/health', (req, res) => {
 })
 
 export default router
+
