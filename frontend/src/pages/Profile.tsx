@@ -156,23 +156,27 @@ export default function Profile() {
           onFormChange={(field, value) => setEditForm({ ...editForm, [field]: value })}
         />
 
-        <StudentVerificationBanner
-          isVerified={user.isStudentVerified || false}
-          studentInfo={{
-            studentEmail: user.studentEmail,
-            studentId: user.studentId,
-            department: user.department,
-            grade: user.grade,
-          }}
-        />
+        {/* 벤더가 아닌 경우에만 학생인증 배너 표시 */}
+        {user.role?.toUpperCase() !== 'VENDOR' && (
+          <StudentVerificationBanner
+            isVerified={user.isStudentVerified || false}
+            studentInfo={{
+              studentEmail: user.studentEmail,
+              studentId: user.studentId,
+              department: user.department,
+              grade: user.grade,
+            }}
+          />
+        )}
 
         <SettingsMenu onPasswordChangeClick={() => setShowPasswordModal(true)} />
 
-        <RoleSwitcher
+        {/* 역할 전환 테스트 - 주석 처리 */}
+        {/* <RoleSwitcher
           currentRole={user.role}
           userName={user.name}
           onRoleSwitch={handleRoleSwitch}
-        />
+        /> */}
 
         {/* 로그아웃 버튼 */}
         <button

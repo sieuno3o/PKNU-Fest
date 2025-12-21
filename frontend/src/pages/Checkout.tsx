@@ -1,21 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CreditCard, Smartphone, Check } from 'lucide-react'
-import { useProcessPayment } from '@/hooks/useOrders'
+import { useCreateOrder, useProcessPayment } from '@/hooks/useOrders'
 import type { PaymentMethod } from '@/types'
+
+interface CartItem {
+  truckId: string
+  truckName: string
+  menuId: string
+  menuName: string
+  price: number
+  quantity: number
+}
 
 export default function Checkout() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const orderId = searchParams.get('orderId')
+  const truckId = searchParams.get('truckId')
   const totalAmount = Number(searchParams.get('amount') || 0)
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | ''>('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [cart, setCart] = useState<CartItem[]>([])
 
+  const createOrderMutation = useCreateOrder()
   const processPaymentMutation = useProcessPayment()
 
-  if (!orderId || orderId === 'undefined' || orderId === 'null') {
+  // 장바구니 데이터 로드
+  useEffect(() => {
+    const savedCart = localStorage.getItem('cart')
+    if (savedCart) {
+      setCart(JSON.parse(savedCart))
+    }
+  }, [])
+
+  if (!truckId) {
     navigate('/cart')
     return null
   }
@@ -47,18 +66,40 @@ export default function Checkout() {
       return
     }
 
+    if (cart.length === 0) {
+      alert('장바구니가 비어있습니다')
+      navigate('/cart')
+      return
+    }
+
     setIsProcessing(true)
 
     try {
+      // 1. 주문 생성 (결제 시점에!)
+      const order = await createOrderMutation.mutateAsync({
+        foodTruckId: truckId,
+        items: cart.map((item) => ({ menuItemId: item.menuId, quantity: item.quantity })),
+      })
+
+      if (!order?.id) {
+        throw new Error('주문 생성 실패')
+      }
+
+      // 2. 결제 처리
       await processPaymentMutation.mutateAsync({
-        orderId,
+        orderId: order.id,
         data: { paymentMethod: selectedMethod },
       })
 
-      // 결제 성공 시 성공 페이지로 이동
-      navigate(`/payment/success?orderId=${orderId}`)
+      // 3. 장바구니 비우기
+      localStorage.removeItem('cart')
+      window.dispatchEvent(new Event('cartUpdated'))
+
+      // 4. 결제 성공 페이지로 이동
+      navigate(`/payment/success?orderId=${order.id}`)
     } catch (error) {
       console.error('Payment error:', error)
+      alert('결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       setIsProcessing(false)
     }
@@ -92,8 +133,8 @@ export default function Checkout() {
                 key={method.id}
                 onClick={() => setSelectedMethod(method.id)}
                 className={`w-full p-4 rounded-xl border-2 transition flex items-center justify-between ${selectedMethod === method.id
-                    ? 'border-orange-600 bg-orange-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-orange-600 bg-orange-50'
+                  : 'border-gray-200 hover:border-gray-300'
                   }`}
               >
                 <div className="flex items-center gap-3">
@@ -128,8 +169,8 @@ export default function Checkout() {
             onClick={handlePayment}
             disabled={!selectedMethod || isProcessing}
             className={`w-full py-4 rounded-xl font-bold text-white transition ${!selectedMethod || isProcessing
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-orange-600 hover:bg-orange-700'
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-orange-600 hover:bg-orange-700'
               }`}
           >
             {isProcessing ? '결제 처리 중...' : `${totalAmount.toLocaleString()}원 결제하기`}

@@ -9,7 +9,6 @@ export default function FoodTruckDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
-  const [showOrderModal, setShowOrderModal] = useState(false)
 
   // 실제 API에서 푸드트럭 데이터 가져오기
   const { data: foodTruck, isLoading, error } = useFoodTruck(id!)
@@ -82,10 +81,38 @@ export default function FoodTruckDetail() {
     toast.success('장바구니에 추가되었습니다!')
   }
 
-  // 바로 결제하기
+  // 바로 결제하기 - 장바구니에 담고 결제 페이지로 이동
   const buyNow = () => {
+    if (!selectedMenu || !foodTruck) return
+
+    // 장바구니에 추가
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
+    const existingItem = cart.find(
+      (item: any) =>
+        item.truckId === foodTruck.id && item.menuId === selectedMenu.id
+    )
+
+    if (existingItem) {
+      existingItem.quantity += 1
+    } else {
+      cart.push({
+        id: `${foodTruck.id}-${selectedMenu.id}-${Date.now()}`,
+        truckId: foodTruck.id,
+        truckName: foodTruck.name,
+        menuId: selectedMenu.id,
+        menuName: selectedMenu.name,
+        price: selectedMenu.price,
+        quantity: 1,
+        image: selectedMenu.imageUrl,
+      })
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart))
+    window.dispatchEvent(new Event('cartUpdated'))
     setSelectedMenu(null)
-    setShowOrderModal(true)
+
+    // 장바구니 페이지로 이동
+    navigate('/cart')
   }
 
   return (
@@ -174,8 +201,14 @@ export default function FoodTruckDetail() {
 
       {/* 메뉴 선택 모달 (장바구니 담기 / 바로 결제하기) */}
       {selectedMenu && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-          <div className="bg-white w-full max-w-md rounded-t-3xl p-6">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-end justify-center z-50"
+          onClick={() => setSelectedMenu(null)}
+        >
+          <div
+            className="bg-white w-full max-w-md rounded-t-3xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setSelectedMenu(null)}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full"
@@ -203,47 +236,6 @@ export default function FoodTruckDetail() {
                 바로 결제하기
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 바로 결제 모달 */}
-      {showOrderModal && selectedMenu && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-          <div className="bg-white w-full max-w-md rounded-t-3xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">주문 확인</h3>
-              <button
-                onClick={() => setShowOrderModal(false)}
-                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="mb-6">
-              <h4 className="font-medium text-gray-900">{selectedMenu.name}</h4>
-              <p className="text-sm text-gray-600">{selectedMenu.price.toLocaleString()}원</p>
-            </div>
-
-            <div className="border-t border-gray-200 pt-4 mb-6">
-              <div className="flex items-center justify-between text-lg font-bold">
-                <span>총 결제금액</span>
-                <span className="text-orange-600">{selectedMenu.price.toLocaleString()}원</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                alert('주문이 완료되었습니다!')
-                setShowOrderModal(false)
-                setSelectedMenu(null)
-                navigate('/orders')
-              }}
-              className="w-full py-4 bg-orange-600 text-white rounded-2xl font-bold hover:bg-orange-700 transition"
-            >
-              {selectedMenu.price.toLocaleString()}원 결제하기
-            </button>
           </div>
         </div>
       )}

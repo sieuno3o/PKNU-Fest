@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ShoppingBag } from 'lucide-react'
-import { useCreateOrder } from '@/hooks/useOrders'
 import CartItemCard, { type CartItem } from '@/components/cart/CartItemCard'
 
 export default function Cart() {
   const navigate = useNavigate()
   const [cart, setCart] = useState<CartItem[]>([])
-  const [isOrdering, setIsOrdering] = useState(false)
-  const createOrderMutation = useCreateOrder()
 
   useEffect(() => {
     const savedCart = localStorage.getItem('cart')
@@ -45,31 +42,13 @@ export default function Cart() {
     return acc
   }, {} as Record<string, { truckName: string; items: CartItem[] }>)
 
-  const handleOrder = async () => {
-    if (isOrdering) return
+  // 결제 페이지로 이동 (주문 생성은 결제 완료 시점에)
+  const handleCheckout = () => {
     const firstTruckId = Object.keys(groupedCart)[0]
     if (!firstTruckId) return
-    setIsOrdering(true)
-    try {
-      const order = await createOrderMutation.mutateAsync({
-        foodTruckId: firstTruckId,
-        items: cart.map((item) => ({ menuItemId: item.menuId, quantity: item.quantity })),
-      })
-      console.log('Order created:', order) // Debug log
-      if (!order?.id) {
-        console.error('Order ID is undefined. Full order object:', order)
-        alert('주문 생성 중 오류가 발생했습니다. 다시 시도해주세요.')
-        setIsOrdering(false)
-        return
-      }
-      // Clear cart after successful order
-      localStorage.removeItem('cart')
-      window.dispatchEvent(new Event('cartUpdated'))
-      navigate(`/checkout?orderId=${order.id}&amount=${totalAmount}`)
-    } catch (error) {
-      console.error('Order creation failed:', error)
-      setIsOrdering(false)
-    }
+
+    // 장바구니 정보를 URL params로 전달 (주문은 결제 시 생성)
+    navigate(`/checkout?truckId=${firstTruckId}&amount=${totalAmount}`)
   }
 
   return (
@@ -84,16 +63,30 @@ export default function Cart() {
           <div className="text-center py-20">
             <ShoppingBag className="w-20 h-20 mx-auto mb-4 text-gray-300" />
             <p className="text-gray-500 mb-4">장바구니가 비어있어요</p>
-            <button
-              onClick={() => navigate('/foodtrucks')}
-              className="px-6 py-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 transition"
-            >
-              푸드트럭 둘러보기
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/foodtrucks')}
+                className="w-full max-w-xs px-6 py-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 transition"
+              >
+                푸드트럭 둘러보기
+              </button>
+              <button
+                onClick={() => navigate('/orders')}
+                className="w-full max-w-xs px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
+              >
+                주문 내역 확인하기
+              </button>
+            </div>
           </div>
         ) : (
           <>
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <button
+                onClick={() => navigate('/orders')}
+                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+              >
+                주문 내역 보기 →
+              </button>
               <button onClick={clearCart} className="text-sm text-red-600 hover:text-red-700 font-medium">
                 전체 삭제
               </button>
@@ -128,12 +121,10 @@ export default function Cart() {
               <span className="text-2xl font-bold text-orange-600">{totalAmount.toLocaleString()}원</span>
             </div>
             <button
-              onClick={handleOrder}
-              disabled={isOrdering}
-              className={`w-full py-4 rounded-2xl font-bold transition ${isOrdering ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-orange-600 text-white hover:bg-orange-700'
-                }`}
+              onClick={handleCheckout}
+              className="w-full py-4 rounded-2xl font-bold bg-orange-600 text-white hover:bg-orange-700 transition"
             >
-              {isOrdering ? '주문 생성 중...' : `${totalAmount.toLocaleString()}원 결제하기`}
+              {totalAmount.toLocaleString()}원 결제하기
             </button>
           </div>
         </div>
